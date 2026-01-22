@@ -1,0 +1,24 @@
+# --- Python (Backend) ---
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+futebol.db
+backup.db
+
+# --- Node / React (Frontend) ---
+# Ignora a pasta de módulos dentro da subpasta vite-project
+**/node_modules/
+# Ignora a pasta de build final
+**/dist/
+# Ignora logs de erro do npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- IDEs e Sistema ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
