@@ -23,24 +23,115 @@ body {
 #root { width: 100%; display: flex; justify-content: center; }
 .app-container { width: 100%; max-width: 1100px; padding: 40px 20px; display: flex; flex-direction: column; }
 
-/* --- CABEÇALHO & NAVEGAÇÃO --- */
-.main-header { text-align: center; margin-bottom: 50px; }
+/* --- CABEÇALHO & NAVEGAÇÃO (Correção do Aviso) --- */
 .app-title {
-  font-size: 3rem; font-weight: 800; letter-spacing: -1.5px; margin-bottom: 25px;
-  background: linear-gradient(to right, #ffffff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  font-size: 3rem; 
+  font-weight: 800; 
+  letter-spacing: -1.5px; 
+  margin-bottom: 25px;
+  background: linear-gradient(to right, #ffffff, #94a3b8);
+  -webkit-background-clip: text; /* Prefixado para Chrome/Safari */
+  background-clip: text;         /* Padrão para compatibilidade (Corrige o aviso) */
+  -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 2px 10px rgba(0,0,0,0.3));
 }
-.nav-tabs {
-  display: inline-flex; background: var(--glass-dark); backdrop-filter: blur(12px);
-  padding: 5px; border-radius: 50px; border: 1px solid var(--glass-border); box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-}
-.nav-btn {
-  background: transparent; border: none; padding: 10px 28px; border-radius: 50px; font-weight: 600; color: var(--text-dim);
-  cursor: pointer; transition: all 0.3s ease;
-}
-.nav-btn:hover { color: white; }
-.nav-btn.active { background: rgba(255, 255, 255, 0.1); color: white; border: 1px solid rgba(255, 255, 255, 0.1); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
 
+/* --- GRID DO CONFRONTO (AJUSTE DAS ESPADAS DE FOGO) --- */
+.pro-matchup-grid {
+  display: grid; 
+  grid-template-columns: 1fr minmax(140px, auto) 1fr; 
+  align-items: center; 
+  gap: 10px; 
+  margin: 15px 0 30px 0;
+  position: relative;
+  perspective: 1000px;
+}
+
+/* Base das Lâminas com Aspecto de Chama */
+.pro-matchup-grid::before, .pro-matchup-grid::after {
+  content: ''; 
+  position: absolute; 
+  top: 50%; 
+  width: 0%; 
+  height: 8px; /* Mais grossas para parecer fogo */
+  border-radius: 4px;
+  opacity: 0; 
+  transition: all 0.2s var(--ease-attack); 
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Lâmina Esquerda - Fogo do Time Casa */
+.pro-matchup-grid::before {
+  left: 20%; 
+  transform-origin: left center;
+  /* Usa a cor do time ou azul padrão */
+  background: linear-gradient(90deg, transparent, var(--team-home-color, #3b82f6), #fff);
+  box-shadow: 0 0 15px var(--team-home-color, #3b82f6), 
+              0 0 30px var(--team-home-color, #3b82f6);
+}
+
+/* Lâmina Direita - Fogo do Time Visitante */
+.pro-matchup-grid::after {
+  right: 20%; 
+  transform-origin: right center;
+  /* Usa a cor do time ou dourado padrão */
+  background: linear-gradient(-90deg, transparent, var(--team-away-color, #fbbf24), #fff);
+  box-shadow: 0 0 15px var(--team-away-color, #fbbf24), 
+              0 0 30px var(--team-away-color, #fbbf24);
+}
+
+/* Ativação do Combate (Hover) */
+.game-card-pro:hover .pro-matchup-grid::before {
+  width: 55%; 
+  opacity: 1; 
+  animation: slashLeftFire 0.4s var(--ease-attack) forwards, fireBurn 0.2s infinite alternate;
+}
+
+.game-card-pro:hover .pro-matchup-grid::after {
+  width: 55%; 
+  opacity: 1; 
+  animation: slashRightFire 0.4s var(--ease-attack) forwards, fireBurn 0.2s infinite alternate;
+}
+
+/* Keyframes de Movimento de Corte com Fogo */
+@keyframes slashLeftFire {
+  0% { transform: translateY(-50%) rotate(-45deg) scaleX(0); }
+  100% { transform: translateY(-50%) rotate(-5deg) scaleX(1) translateX(15px); }
+}
+
+@keyframes slashRightFire {
+  0% { transform: translateY(-50%) rotate(45deg) scaleX(0); }
+  100% { transform: translateY(-50%) rotate(5deg) scaleX(1) translateX(-15px); }
+}
+
+/* --- IMPACTO NO PLACAR --- */
+.game-card-pro:hover .score-box-pro::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 100px; height: 100px;
+  /* Mistura as cores dos dois times no impacto */
+  background: radial-gradient(circle, #fff 0%, var(--team-home-color, #3b82f6) 40%, var(--team-away-color, #fbbf24) 70%, transparent 100%);
+  transform: translate(-50%, -50%) scale(0);
+  animation: impactFlash 0.5s ease-out forwards 0.3s;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+}
+
+@keyframes impactFlash {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(4); opacity: 0; }
+}
+
+/* Logos pegando fogo no ataque */
+.game-card-pro:hover .team-logo-match {
+  filter: drop-shadow(0 0 12px var(--team-home-color, #3b82f6)) brightness(1.2);
+}
+
+.game-card-pro:hover .team-block:last-child .team-logo-match {
+  filter: drop-shadow(0 0 12px var(--team-away-color, #fbbf24)) brightness(1.2);
+}
 /* --- BARRA DE BUSCA --- */
 .search-bar-enhanced {
   display: flex; padding: 6px; border-radius: 18px; max-width: 600px; margin: 0 auto 50px auto;
