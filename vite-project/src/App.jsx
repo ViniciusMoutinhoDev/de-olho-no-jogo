@@ -35,7 +35,7 @@ const AuthScreen = ({ onLogin }) => {
   return (
     <div className="auth-container">
       <div className="auth-card">
-        <h1 className="app-title" style={{fontSize: '2rem', marginBottom: '10px'}}>⚽ Futebol Travel</h1>
+        <h1 className="app-title" style={{fontSize: '2rem', marginBottom: '10px'}}>De Olho No Jogo</h1>
         <h2 style={{color:'white', marginBottom:'20px'}}>{isRegister ? 'Criar Conta' : 'Bem-vindo de volta'}</h2>
         
         {error && <div style={{background:'rgba(239, 68, 68, 0.2)', color:'#fca5a5', padding:'10px', borderRadius:'8px', marginBottom:'15px', fontSize:'0.9rem'}}>{error}</div>}
@@ -213,7 +213,7 @@ function App() {
            <button onClick={handleLogout} style={{background:'rgba(255,255,255,0.1)', border:'none', color:'white', padding:'8px 16px', borderRadius:'8px', cursor:'pointer'}}>Sair</button>
         </div>
 
-        <h1 className="app-title">⚽ Futebol Travel Pro</h1>
+        <h1 className="app-title"><span className="css-eye-icon"></span> De Olho No Jogo</h1>
         <div className="nav-tabs">
           <button className={`nav-btn ${activeTab === 'search' ? 'active' : ''}`} onClick={() => setActiveTab('search')}>🔍 Explorar</button>
           <button className={`nav-btn ${activeTab === 'diary' ? 'active' : ''}`} onClick={() => setActiveTab('diary')}>📓 Diário</button>

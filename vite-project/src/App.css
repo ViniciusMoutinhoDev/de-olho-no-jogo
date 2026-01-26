@@ -2,41 +2,248 @@
 
 /* --- VARIÁVEIS GLOBAIS --- */
 :root {
-  --primary: #3b82f6; --primary-dark: #2563eb; --success: #10b981;          
-  --gold: #d4af37; --gold-glow: rgba(212, 175, 55, 0.6); --blade-light: #f8fafc;
-  --text-light: #f1f5f9; --text-dim: #94a3b8; --text-dark: #0f172a;        
-  --bg-deep: #0f172a; --glass-dark: rgba(30, 41, 59, 0.6); --glass-border: rgba(255, 255, 255, 0.08);
-  /* Curvas de Animação de Combate */
+  --primary: #3b82f6; 
+  --primary-dark: #2563eb; 
+  --success: #10b981;          
+  --gold: #d4af37; 
+  --gold-glow: rgba(212, 175, 55, 0.6); 
+  --text-light: #f1f5f9; 
+  --text-dim: #94a3b8; 
+  --text-dark: #0f172a;        
+  --bg-deep: #0f172a; 
+  --glass-dark: rgba(30, 41, 59, 0.6); 
+  --glass-border: rgba(255, 255, 255, 0.08);
+  
+  /* Curvas de Animação (Simplificadas) */
   --ease-smooth: cubic-bezier(0.25, 0.8, 0.25, 1);
-  --ease-attack: cubic-bezier(0.1, 0.9, 0.2, 1); /* Ataque rápido e impactante */
-  --ease-recoil: cubic-bezier(0.68, -0.55, 0.265, 1.55); /* Recuo elástico */
 }
 
 /* --- RESET & BASE --- */
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
 body {
-  font-family: 'Inter', sans-serif; color: var(--text-light); min-height: 100vh;
+  font-family: 'Inter', sans-serif; 
+  color: var(--text-light); 
+  min-height: 100vh;
   background-color: var(--bg-deep);
-  background-image: radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.1) 0, transparent 50%), radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.1) 0, transparent 50%), radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.05) 0, transparent 50%);
-  background-attachment: fixed; overflow-x: hidden;
+  background-image: radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.1) 0, transparent 50%), 
+                    radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.1) 0, transparent 50%), 
+                    radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.05) 0, transparent 50%);
+  background-attachment: fixed; 
+  overflow-x: hidden;
 }
+
 #root { width: 100%; display: flex; justify-content: center; }
 .app-container { width: 100%; max-width: 1100px; padding: 40px 20px; display: flex; flex-direction: column; }
 
-/* --- CABEÇALHO & NAVEGAÇÃO (Correção do Aviso) --- */
+/* --- CABEÇALHO & NAVEGAÇÃO --- */
+.main-header { text-align: center; margin-bottom: 50px; }
+
 .app-title {
   font-size: 3rem; 
   font-weight: 800; 
   letter-spacing: -1.5px; 
   margin-bottom: 25px;
-  background: linear-gradient(to right, #ffffff, #94a3b8);
-  -webkit-background-clip: text; /* Prefixado para Chrome/Safari */
-  background-clip: text;         /* Padrão para compatibilidade (Corrige o aviso) */
+  background: linear-gradient(to right, #ffffff, #94a3b8); 
+  -webkit-background-clip: text; 
+  background-clip: text; /* Compatibilidade padrão */
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 2px 10px rgba(0,0,0,0.3));
 }
 
-/* --- GRID DO CONFRONTO (AJUSTE DAS ESPADAS DE FOGO) --- */
+.nav-tabs {
+  display: inline-flex; 
+  background: var(--glass-dark); 
+  backdrop-filter: blur(12px);
+  padding: 5px; 
+  border-radius: 50px; 
+  border: 1px solid var(--glass-border); 
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.nav-btn {
+  background: transparent; 
+  border: none; 
+  padding: 10px 28px; 
+  border-radius: 50px; 
+  font-weight: 600; 
+  color: var(--text-dim);
+  cursor: pointer; 
+  transition: all 0.3s ease;
+}
+
+.nav-btn:hover { color: white; }
+.nav-btn.active { 
+  background: rgba(255, 255, 255, 0.1); 
+  color: white; 
+  border: 1px solid rgba(255, 255, 255, 0.1); 
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2); 
+}
+
+/* --- BARRA DE BUSCA --- */
+.search-bar-enhanced {
+  display: flex; 
+  padding: 6px; 
+  border-radius: 18px; 
+  max-width: 600px; 
+  margin: 0 auto 50px auto;
+  background: var(--glass-dark); 
+  backdrop-filter: blur(12px); 
+  border: 1px solid var(--glass-border); 
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+  transition: transform 0.3s var(--ease-smooth);
+}
+
+.search-bar-enhanced:focus-within { 
+  transform: scale(1.02); 
+  border-color: rgba(255,255,255,0.2); 
+  box-shadow: 0 8px 30px rgba(59, 130, 246, 0.15); 
+}
+
+.search-input { 
+  flex: 1; 
+  background: transparent; 
+  border: none; 
+  outline: none; 
+  padding: 12px 20px; 
+  font-size: 1.1rem; 
+  color: white; 
+}
+.search-input::placeholder { color: var(--text-dim); }
+
+.btn-primary-gradient { 
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+  color: white; 
+  border: none; 
+  padding: 0 30px; 
+  border-radius: 12px; 
+  font-weight: 700; 
+  cursor: pointer; 
+  transition: 0.3s; 
+}
+.btn-primary-gradient:hover { filter: brightness(1.15); }
+
+/* --- HERO CARD (Sem alterações) --- */
+@keyframes metallicShine { 0% { background-position: 200% 50%; } 100% { background-position: -200% 50%; } }
+
+.team-highlight-card {
+  display: grid; 
+  grid-template-columns: auto 1fr; 
+  gap: 30px; 
+  align-items: center; 
+  padding: 45px 50px; 
+  border-radius: 24px;
+  margin-bottom: 50px; 
+  position: relative; 
+  overflow: hidden;
+  --base-color: var(--team-color, #333); 
+  --dark-metal: color-mix(in srgb, var(--base-color), black 70%);
+  background: linear-gradient(135deg, var(--dark-metal), color-mix(in srgb, var(--base-color), black 40%));
+  border: 1px solid rgba(255,255,255,0.1); 
+  box-shadow: 0 20px 50px -10px rgba(0,0,0,0.5); 
+  transition: transform 0.4s var(--ease-smooth);
+}
+
+.team-highlight-card:hover {
+  transform: translateY(-3px); 
+  background: linear-gradient(115deg, var(--dark-metal) 0%, color-mix(in srgb, var(--base-color), black 30%) 40%, white 50%, color-mix(in srgb, var(--base-color), black 30%) 60%, var(--dark-metal) 100%);
+  background-size: 200% 100%; 
+  animation: metallicShine 3s linear infinite; 
+  border-color: rgba(255,255,255,0.3);
+}
+
+.team-highlight-card h2 { 
+  font-size: 3rem; 
+  text-shadow: 0 4px 10px rgba(0,0,0,0.5); 
+  margin-bottom: 5px; 
+  color: white; 
+}
+
+.team-logo-large { 
+  filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); 
+  transition: 0.4s var(--ease-smooth); 
+}
+.team-highlight-card:hover .team-logo-large { transform: scale(1.1) rotate(-3deg); }
+
+.view-switcher-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 40px; }
+.toggle-view-btn { 
+  background: rgba(255,255,255,0.05); 
+  border: 1px solid rgba(255,255,255,0.1); 
+  color: var(--text-dim); 
+  padding: 12px 24px; 
+  border-radius: 12px; 
+  font-weight: 700; 
+  cursor: pointer; 
+  transition: 0.3s; 
+}
+.toggle-view-btn.active-next { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: #3b82f6; }
+.toggle-view-btn.active-last { background: white; color: var(--bg-deep); border-color: white; }
+
+/* --- ACORDEÃO --- */
+.year-accordion-enhanced { margin-bottom: 20px; }
+.year-header-enhanced { 
+  width: 100%; 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
+  padding: 20px 25px; 
+  font-size: 1.1rem; 
+  font-weight: 700; 
+  cursor: pointer; 
+  color: white; 
+  background: rgba(30, 41, 59, 0.4); 
+  border: 1px solid rgba(255,255,255,0.05); 
+  border-radius: 16px; 
+  transition: 0.2s; 
+}
+.year-header-enhanced:hover { background: rgba(30, 41, 59, 0.8); }
+
+/* --- GAME CARD (PLATINUM VIP) --- */
+.game-card-pro {
+  background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8));
+  backdrop-filter: blur(10px); 
+  border: 1px solid rgba(255, 255, 255, 0.08); 
+  border-radius: 20px;
+  padding: 25px; 
+  margin-bottom: 20px; 
+  position: relative; 
+  overflow: hidden; 
+  color: var(--text-light);
+  transition: all 0.4s var(--ease-smooth); 
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+.game-card-pro:hover {
+  background: #ffffff; 
+  transform: translateY(-5px); 
+  color: var(--text-dark);
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.4);
+  border-color: rgba(255,255,255,0.8); 
+  z-index: 10;
+}
+
+.game-card-pro::before { 
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; transition: 0.3s; opacity: 0.6; 
+}
+.game-card-pro.future::before { background: var(--primary); } 
+.game-card-pro.saved::before { background: var(--success); }
+.game-card-pro:hover::before { width: 6px; opacity: 1; }
+
+.pro-card-header { 
+  display: flex; justify-content: space-between; align-items: center; 
+  margin-bottom: 20px; font-size: 0.8rem; font-weight: 700; 
+  text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); 
+  transition: 0.3s; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px; 
+}
+.game-card-pro:hover .pro-card-header { color: #64748b; border-bottom-color: #f1f5f9; }
+.game-card-pro:hover .pro-card-header span { color: #64748b; }
+
+.saved-badge { 
+  background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 4px 12px; border-radius: 20px; transition: 0.3s; 
+}
+.game-card-pro:hover .saved-badge { background: #d1fae5; color: #059669; }
+
+/* --- GRID DO CONFRONTO (LIMPO - SEM ESPADAS) --- */
 .pro-matchup-grid {
   display: grid; 
   grid-template-columns: 1fr minmax(140px, auto) 1fr; 
@@ -44,282 +251,118 @@ body {
   gap: 10px; 
   margin: 15px 0 30px 0;
   position: relative;
-  perspective: 1000px;
 }
 
-/* Base das Lâminas com Aspecto de Chama */
-.pro-matchup-grid::before, .pro-matchup-grid::after {
-  content: ''; 
-  position: absolute; 
-  top: 50%; 
-  width: 0%; 
-  height: 8px; /* Mais grossas para parecer fogo */
-  border-radius: 4px;
-  opacity: 0; 
-  transition: all 0.2s var(--ease-attack); 
-  z-index: 3;
-  pointer-events: none;
+/* Logos e Nomes */
+.team-block { 
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start; 
+  gap: 12px; text-align: center; height: 100%; z-index: 2; 
 }
 
-/* Lâmina Esquerda - Fogo do Time Casa */
-.pro-matchup-grid::before {
-  left: 20%; 
-  transform-origin: left center;
-  /* Usa a cor do time ou azul padrão */
-  background: linear-gradient(90deg, transparent, var(--team-home-color, #3b82f6), #fff);
-  box-shadow: 0 0 15px var(--team-home-color, #3b82f6), 
-              0 0 30px var(--team-home-color, #3b82f6);
+.team-logo-match { 
+  width: 65px; height: 65px; object-fit: contain; 
+  filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); 
+  transition: transform 0.3s ease; 
 }
 
-/* Lâmina Direita - Fogo do Time Visitante */
-.pro-matchup-grid::after {
-  right: 20%; 
-  transform-origin: right center;
-  /* Usa a cor do time ou dourado padrão */
-  background: linear-gradient(-90deg, transparent, var(--team-away-color, #fbbf24), #fff);
-  box-shadow: 0 0 15px var(--team-away-color, #fbbf24), 
-              0 0 30px var(--team-away-color, #fbbf24);
-}
-
-/* Ativação do Combate (Hover) */
-.game-card-pro:hover .pro-matchup-grid::before {
-  width: 55%; 
-  opacity: 1; 
-  animation: slashLeftFire 0.4s var(--ease-attack) forwards, fireBurn 0.2s infinite alternate;
-}
-
-.game-card-pro:hover .pro-matchup-grid::after {
-  width: 55%; 
-  opacity: 1; 
-  animation: slashRightFire 0.4s var(--ease-attack) forwards, fireBurn 0.2s infinite alternate;
-}
-
-/* Keyframes de Movimento de Corte com Fogo */
-@keyframes slashLeftFire {
-  0% { transform: translateY(-50%) rotate(-45deg) scaleX(0); }
-  100% { transform: translateY(-50%) rotate(-5deg) scaleX(1) translateX(15px); }
-}
-
-@keyframes slashRightFire {
-  0% { transform: translateY(-50%) rotate(45deg) scaleX(0); }
-  100% { transform: translateY(-50%) rotate(5deg) scaleX(1) translateX(-15px); }
-}
-
-/* --- IMPACTO NO PLACAR --- */
-.game-card-pro:hover .score-box-pro::after {
-  content: '';
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 100px; height: 100px;
-  /* Mistura as cores dos dois times no impacto */
-  background: radial-gradient(circle, #fff 0%, var(--team-home-color, #3b82f6) 40%, var(--team-away-color, #fbbf24) 70%, transparent 100%);
-  transform: translate(-50%, -50%) scale(0);
-  animation: impactFlash 0.5s ease-out forwards 0.3s;
-  border-radius: 50%;
-  mix-blend-mode: screen;
-}
-
-@keyframes impactFlash {
-  0% { transform: translate(-50%, -50%) scale(0); opacity: 1; }
-  100% { transform: translate(-50%, -50%) scale(4); opacity: 0; }
-}
-
-/* Logos pegando fogo no ataque */
+/* Efeito suave de zoom no hover */
 .game-card-pro:hover .team-logo-match {
-  filter: drop-shadow(0 0 12px var(--team-home-color, #3b82f6)) brightness(1.2);
+  transform: scale(1.1);
+  filter: drop-shadow(0 8px 10px rgba(0,0,0,0.2));
 }
 
-.game-card-pro:hover .team-block:last-child .team-logo-match {
-  filter: drop-shadow(0 0 12px var(--team-away-color, #fbbf24)) brightness(1.2);
+.team-name-pro { 
+  font-weight: 800; font-size: 1.1rem; color: white; line-height: 1.2; transition: 0.3s; 
 }
-/* --- BARRA DE BUSCA --- */
-.search-bar-enhanced {
-  display: flex; padding: 6px; border-radius: 18px; max-width: 600px; margin: 0 auto 50px auto;
-  background: var(--glass-dark); backdrop-filter: blur(12px); border: 1px solid var(--glass-border); box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-  transition: transform 0.3s var(--ease-smooth);
-}
-.search-bar-enhanced:focus-within { transform: scale(1.02); border-color: rgba(255,255,255,0.2); box-shadow: 0 8px 30px rgba(59, 130, 246, 0.15); }
-.search-input { flex: 1; background: transparent; border: none; outline: none; padding: 12px 20px; font-size: 1.1rem; color: white; }
-.search-input::placeholder { color: var(--text-dim); }
-.btn-primary-gradient { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; border: none; padding: 0 30px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; }
-.btn-primary-gradient:hover { filter: brightness(1.15); }
-
-/* --- HERO CARD --- */
-@keyframes metallicShine { 0% { background-position: 200% 50%; } 100% { background-position: -200% 50%; } }
-.team-highlight-card {
-  display: grid; grid-template-columns: auto 1fr; gap: 30px; align-items: center; padding: 45px 50px; border-radius: 24px;
-  margin-bottom: 50px; position: relative; overflow: hidden;
-  --base-color: var(--team-color, #333); --dark-metal: color-mix(in srgb, var(--base-color), black 70%);
-  background: linear-gradient(135deg, var(--dark-metal), color-mix(in srgb, var(--base-color), black 40%));
-  border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 20px 50px -10px rgba(0,0,0,0.5); transition: transform 0.4s var(--ease-smooth);
-}
-.team-highlight-card:hover {
-  transform: translateY(-3px); background: linear-gradient(115deg, var(--dark-metal) 0%, color-mix(in srgb, var(--base-color), black 30%) 40%, white 50%, color-mix(in srgb, var(--base-color), black 30%) 60%, var(--dark-metal) 100%);
-  background-size: 200% 100%; animation: metallicShine 3s linear infinite; border-color: rgba(255,255,255,0.3);
-}
-.team-highlight-card h2 { font-size: 3rem; text-shadow: 0 4px 10px rgba(0,0,0,0.5); margin-bottom: 5px; color: white; }
-.team-logo-large { filter: drop-shadow(0 10px 20px rgba(0,0,0,0.5)); transition: 0.4s var(--ease-smooth); }
-.team-highlight-card:hover .team-logo-large { transform: scale(1.1) rotate(-3deg); }
-.view-switcher-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 40px; }
-.toggle-view-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-dim); padding: 12px 24px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.3s; }
-.toggle-view-btn.active-next { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border-color: #3b82f6; }
-.toggle-view-btn.active-last { background: white; color: var(--bg-deep); border-color: white; }
-
-/* --- ACORDEÃO --- */
-.year-accordion-enhanced { margin-bottom: 20px; }
-.year-header-enhanced { width: 100%; display: flex; justify-content: space-between; align-items: center; padding: 20px 25px; font-size: 1.1rem; font-weight: 700; cursor: pointer; color: white; background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; transition: 0.2s; }
-.year-header-enhanced:hover { background: rgba(30, 41, 59, 0.8); }
-
-/* --- GAME CARD (PLATINUM VIP) --- */
-.game-card-pro {
-  background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.8));
-  backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 20px;
-  padding: 25px; margin-bottom: 20px; position: relative; overflow: hidden; color: var(--text-light);
-  transition: all 0.4s var(--ease-smooth); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-}
-.game-card-pro:hover {
-  background: #ffffff; transform: translateY(-6px) scale(1.01); color: var(--text-dark);
-  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 30px var(--gold-glow);
-  border-color: var(--gold); z-index: 10;
-}
-.game-card-pro::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; transition: 0.3s; opacity: 0.6; }
-.game-card-pro.future::before { background: var(--primary); } .game-card-pro.saved::before { background: var(--success); }
-.game-card-pro:hover::before { width: 6px; opacity: 1; }
-
-.pro-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); transition: 0.3s; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 10px; }
-.game-card-pro:hover .pro-card-header { color: #64748b; border-bottom-color: #f1f5f9; }
-.game-card-pro:hover .pro-card-header span { color: #64748b; }
-.saved-badge { background: rgba(16, 185, 129, 0.15); color: #34d399; padding: 4px 12px; border-radius: 20px; transition: 0.3s; }
-.game-card-pro:hover .saved-badge { background: #d1fae5; color: #059669; }
-
-
-/* --- GRID DO CONFRONTO (A BATALHA ÉPICA) --- */
-.pro-matchup-grid {
-  display: grid; grid-template-columns: 1fr minmax(140px, auto) 1fr; align-items: center; gap: 10px; margin: 15px 0 30px 0;
-  position: relative; /* Necessário para as espadas absolutas */
-}
-
-/* Definição das Lâminas de Energia (Pseudo-elementos) */
-.pro-matchup-grid::before, .pro-matchup-grid::after {
-  content: ''; position: absolute; top: 50%; 
-  width: 0%; height: 4px; /* Começam sem largura */
-  background: linear-gradient(90deg, transparent, var(--blade-light), white);
-  filter: drop-shadow(0 0 8px var(--blade-light));
-  opacity: 0; transition: all 0.1s ease-out; z-index: 3;
-}
-/* Lâmina Esquerda (Azul/Branca) */
-.pro-matchup-grid::before {
-  left: 25%; transform-origin: left center; transform: translateY(-50%) rotate(-25deg);
-  --blade-light: #60a5fa;
-}
-/* Lâmina Direita (Dourada/Branca) */
-.pro-matchup-grid::after {
-  right: 25%; transform-origin: right center; transform: translateY(-50%) rotate(25deg);
-  --blade-light: #fbbf24;
-  background: linear-gradient(-90deg, transparent, var(--blade-light), white);
-}
-
-/* Animação do Ataque no Hover */
-.game-card-pro:hover .pro-matchup-grid::before {
-  width: 60%; opacity: 1; left: 5%;
-  animation: slashLeft 0.4s var(--ease-attack) forwards;
-}
-.game-card-pro:hover .pro-matchup-grid::after {
-  width: 60%; opacity: 1; right: 5%;
-  animation: slashRight 0.4s var(--ease-attack) forwards;
-}
-
-@keyframes slashLeft {
-  0% { transform: translateY(-50%) rotate(-35deg) scaleX(0.2); opacity: 0; }
-  60% { transform: translateY(-50%) rotate(-15deg) scaleX(1); opacity: 1; }
-  100% { transform: translateY(-50%) rotate(0deg) scaleX(0.9) translateX(10px); opacity: 0.8; } /* Termina no centro */
-}
-@keyframes slashRight {
-  0% { transform: translateY(-50%) rotate(35deg) scaleX(0.2); opacity: 0; }
-  60% { transform: translateY(-50%) rotate(15deg) scaleX(1); opacity: 1; }
-  100% { transform: translateY(-50%) rotate(0deg) scaleX(0.9) translateX(-10px); opacity: 0.8; } /* Termina no centro */
-}
-
-/* Movimento dos Logos durante a Batalha */
-.team-block { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 12px; text-align: center; height: 100%; z-index: 2; }
-.team-logo-match { width: 65px; height: 65px; object-fit: contain; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); transition: all 0.4s var(--ease-recoil); }
-/* Logo Esq: Recua e Ataca */
-.game-card-pro:hover .team-block:first-child .team-logo-match {
-  animation: attackLeft 0.5s var(--ease-attack) forwards;
-}
-/* Logo Dir: Recua e Ataca */
-.game-card-pro:hover .team-block:last-child .team-logo-match {
-  animation: attackRight 0.5s var(--ease-attack) forwards;
-}
-
-@keyframes attackLeft {
-  0% { transform: scale(1) translateX(0); }
-  30% { transform: scale(0.9) translateX(-20px) rotate(-10deg); } /* Recuo */
-  100% { transform: scale(1.2) translateX(30px) rotate(5deg); filter: drop-shadow(0 0 15px var(--primary)); } /* Ataque */
-}
-@keyframes attackRight {
-  0% { transform: scale(1) translateX(0); }
-  30% { transform: scale(0.9) translateX(20px) rotate(10deg); } /* Recuo */
-  100% { transform: scale(1.2) translateX(-30px) rotate(-5deg); filter: drop-shadow(0 0 15px var(--gold)); } /* Ataque */
-}
-
-/* Placar Central (Flash de Impacto) */
-.score-box-pro {
-  background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255,255,255,0.1); padding: 12px 0; border-radius: 12px; font-weight: 800; font-size: 1.8rem; color: white; transition: 0.3s; display: flex; justify-content: center; align-items: center; box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); z-index: 4; position: relative;
-}
-/* O Flash de Luz no impacto */
-.score-box-pro::after {
-  content: ''; position: absolute; top: 50%; left: 50%; width: 10px; height: 10px; border-radius: 50%;
-  background: white; box-shadow: 0 0 20px 10px white, 0 0 40px 20px var(--gold);
-  opacity: 0; transform: translate(-50%, -50%) scale(0); transition: 0.1s;
-}
-.game-card-pro:hover .score-box-pro {
-  background: #fff; color: var(--text-dark); border-color: var(--gold); transform: scale(0.9); /* Encolhe no impacto */
-  animation: impactShake 0.4s var(--ease-attack) forwards 0.2s; /* Treme no impacto */
-}
-.game-card-pro:hover .score-box-pro::after {
-  animation: impactFlash 0.6s ease-out forwards 0.25s; /* Flash logo após as espadas cruzarem */
-}
-
-@keyframes impactShake {
-  0%, 100% { transform: scale(0.9) translateX(0); }
-  20% { transform: scale(0.9) translateX(-5px); }
-  40% { transform: scale(0.9) translateX(5px); }
-  60% { transform: scale(0.9) translateX(-3px); }
-  80% { transform: scale(0.9) translateX(3px); }
-}
-@keyframes impactFlash {
-  0% { opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
-  50% { opacity: 0.8; transform: translate(-50%, -50%) scale(2.5); }
-  100% { opacity: 0; transform: translate(-50%, -50%) scale(4); }
-}
-
-.team-name-pro { font-weight: 800; font-size: 1.1rem; color: white; line-height: 1.2; transition: 0.3s; }
 .game-card-pro:hover .team-name-pro { color: var(--text-dark); }
-.score-time { font-size: 1.2rem; color: #60a5fa; background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); }
-.game-card-pro:hover .score-time { color: var(--primary-dark); background: #eff6ff; border-color: #bfdbfe; }
+
+/* Placar Central */
+.score-box-pro {
+  background: rgba(0, 0, 0, 0.4); 
+  border: 1px solid rgba(255,255,255,0.1); 
+  padding: 12px 0; 
+  border-radius: 12px; 
+  font-weight: 800; font-size: 1.8rem; color: white; 
+  transition: 0.3s; 
+  display: flex; justify-content: center; align-items: center; 
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.3); 
+  z-index: 4; position: relative;
+}
+
+.game-card-pro:hover .score-box-pro {
+  background: #f1f5f9; 
+  color: var(--text-dark); 
+  border-color: transparent; 
+  transform: scale(1.05); /* Leve pulso no hover */
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.score-time { 
+  font-size: 1.2rem; color: #60a5fa; 
+  background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); 
+}
+.game-card-pro:hover .score-time { 
+  color: var(--primary-dark); background: #eff6ff; border-color: #bfdbfe; 
+}
 
 /* --- RODAPÉ & BOTÕES --- */
-.pro-card-footer { border-top: 1px solid rgba(255,255,255,0.08); padding-top: 20px; display: flex; justify-content: space-between; align-items: center; transition: 0.3s; }
+.pro-card-footer { 
+  border-top: 1px solid rgba(255,255,255,0.08); 
+  padding-top: 20px; 
+  display: flex; justify-content: space-between; align-items: center; 
+  transition: 0.3s; 
+}
 .game-card-pro:hover .pro-card-footer { border-top-color: #e2e8f0; }
-.location-data { display: flex; flex-direction: column; gap: 5px; font-size: 0.9rem; color: var(--text-dim); font-weight: 500; transition: 0.3s; }
+
+.location-data { 
+  display: flex; flex-direction: column; gap: 5px; 
+  font-size: 0.9rem; color: var(--text-dim); font-weight: 500; 
+  transition: 0.3s; 
+}
 .game-card-pro:hover .location-data { color: #64748b; }
-.logistics-info { color: #60a5fa; font-weight: 700; display: flex; align-items: center; gap: 6px; background: rgba(59, 130, 246, 0.1); padding: 4px 10px; border-radius: 8px; width: fit-content; }
-.btn-action-pro { padding: 10px 20px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 0.9rem; border: none; cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; }
-.btn-travel-pro { background: rgba(255,255,255,0.05); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.2); }
-.game-card-pro:hover .btn-travel-pro { background: var(--primary-dark); color: white; border-color: var(--primary-dark); box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3); }
-.btn-save-pro { background: white; color: black; box-shadow: 0 0 10px rgba(255,255,255,0.2); }
+
+.logistics-info { 
+  color: #60a5fa; font-weight: 700; 
+  display: flex; align-items: center; gap: 6px; 
+  background: rgba(59, 130, 246, 0.1); 
+  padding: 4px 10px; border-radius: 8px; width: fit-content; 
+}
+
+.btn-action-pro { 
+  padding: 10px 20px; border-radius: 10px; text-decoration: none; 
+  font-weight: 700; font-size: 0.9rem; border: none; cursor: pointer; 
+  transition: 0.2s; display: inline-flex; align-items: center; gap: 8px; 
+}
+
+.btn-travel-pro { 
+  background: rgba(255,255,255,0.05); color: #e2e8f0; border: 1px solid rgba(255,255,255,0.2); 
+}
+.game-card-pro:hover .btn-travel-pro { 
+  background: var(--primary-dark); color: white; border-color: var(--primary-dark); 
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3); 
+}
+
+.btn-save-pro { 
+  background: white; color: black; box-shadow: 0 0 10px rgba(255,255,255,0.2); 
+}
 .game-card-pro:hover .btn-save-pro { background: var(--text-dark); color: white; }
+
 .btn-remove-pro { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
 .game-card-pro:hover .btn-remove-pro { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; }
 
 /* --- RESPONSIVIDADE --- */
 @media (max-width: 768px) {
   .team-highlight-card { grid-template-columns: 1fr; text-align: center; padding: 30px 20px; }
-  .pro-card-footer { flex-direction: column; align-items: flex-start; gap: 20px; } .pro-card-footer > div { width: 100%; } .btn-action-pro { width: 100%; justify-content: center; }
+  .pro-card-footer { flex-direction: column; align-items: flex-start; gap: 20px; } 
+  .pro-card-footer > div { width: 100%; } 
+  .btn-action-pro { width: 100%; justify-content: center; }
+  
   .pro-matchup-grid { gap: 5px; grid-template-columns: 1fr minmax(110px, auto) 1fr; }
-  .team-logo-match { width: 50px; height: 50px; } .score-box-pro { font-size: 1.4rem; padding: 8px 0; } .app-title { font-size: 2.2rem; }
+  .team-logo-match { width: 50px; height: 50px; } 
+  .score-box-pro { font-size: 1.4rem; padding: 8px 0; } 
+  .app-title { font-size: 2.2rem; }
 }
+
 /* --- LOGIN SCREEN --- */
 .auth-container {
   display: flex; justify-content: center; align-items: center;
@@ -333,14 +376,37 @@ body {
   box-shadow: 0 20px 50px rgba(0,0,0,0.5);
   width: 100%; max-width: 400px; text-align: center;
 }
-/* --- ANIMAÇÕES DE FOGO E IMPACTO --- */
-@keyframes fireBurn {
-  0%, 100% { opacity: 0.8; filter: blur(2px) brightness(1.2); }
-  50% { opacity: 1; filter: blur(1px) brightness(1.5); }
+/* --- ÍCONE DE OLHO CSS (NOVO) --- */
+.css-eye-icon {
+  display: inline-block;
+  width: 0.6em;  /* Tamanho relativo à fonte */
+  height: 0.6em;
+  border: 4px solid #ffffff; /* Borda branca sólida */
+  border-radius: 75% 15%;    /* Cria o formato de amêndoa */
+  transform: rotate(45deg);  /* Gira para ficar na horizontal */
+  position: relative;
+  margin-right: 25px;        /* Espaço entre olho e texto */
+  margin-bottom: 10px;       /* Ajuste vertical */
+  vertical-align: middle;
+  
+  /* Garante que o ícone tenha cor sólida, ignorando o gradiente do texto */
+  -webkit-text-fill-color: initial; 
+  background: transparent;
+  
+  /* Efeito de Brilho */
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.5), inset 0 0 10px rgba(255, 255, 255, 0.2);
 }
 
-@keyframes sparks {
-  0% { transform: scale(0); opacity: 0; }
-  50% { transform: scale(1.5); opacity: 1; }
-  100% { transform: scale(2); opacity: 0; }
+/* A Pupila do Olho */
+.css-eye-icon::after {
+  content: '';
+  position: absolute;
+  top: 50%; 
+  left: 50%;
+  transform: translate(-50%, -50%); /* Centraliza perfeitamente */
+  width: 40%;
+  height: 40%;
+  background: #ffffff;
+  border-radius: 50%; /* Faz a bola redonda */
+  box-shadow: 0 0 5px rgba(59, 130, 246, 0.8); /* Brilho azul na pupila */
 }
