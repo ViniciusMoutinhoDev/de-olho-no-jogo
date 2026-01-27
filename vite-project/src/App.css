@@ -410,3 +410,152 @@ body {
   border-radius: 50%; /* Faz a bola redonda */
   box-shadow: 0 0 5px rgba(59, 130, 246, 0.8); /* Brilho azul na pupila */
 }
+/* ============================= */
+/* ===== TRAVEL PLANNER ======== */
+/* ============================= */
+
+.travel-planner {
+  background: rgba(30, 41, 59, 0.65);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 24px;
+  padding: 40px;
+  max-width: 820px;
+  margin: 0 auto;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+  animation: fadeIn 0.4s ease;
+}
+
+.travel-planner h2 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin-bottom: 25px;
+  color: white;
+}
+
+.travel-planner-section {
+  margin-bottom: 35px;
+}
+
+.travel-planner-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 18px;
+}
+
+.cost-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cost-item label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  letter-spacing: 0.5px;
+}
+
+.cost-item input {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  color: white;
+  transition: 0.2s ease;
+}
+
+.cost-item input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: rgba(59,130,246,0.08);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+}
+
+/* TOTAL DESTACADO */
+
+.total-box {
+  margin-top: 25px;
+  padding: 18px 22px;
+  border-radius: 16px;
+  background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(59,130,246,0.15));
+  border: 1px solid rgba(255,255,255,0.1);
+  font-size: 1.2rem;
+  font-weight: 800;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.total-value {
+  font-size: 1.5rem;
+  color: #34d399;
+}
+
+/* LINKS ÚTEIS */
+
+.links-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.link-pill {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 8px 16px;
+  border-radius: 30px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--text-light);
+  transition: 0.2s ease;
+}
+
+.link-pill:hover {
+  background: var(--primary);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(59,130,246,0.4);
+}
+
+/* BOTÃO SALVAR */
+
+.btn-save-planner {
+  margin-top: 30px;
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--success), #059669);
+  color: white;
+  transition: 0.3s ease;
+  box-shadow: 0 10px 25px rgba(16,185,129,0.4);
+}
+
+.btn-save-planner:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+/* Animação */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .travel-planner {
+    padding: 25px;
+  }
+
+  .travel-planner-grid {
+    grid-template-columns: 1fr;
+  }
+}
