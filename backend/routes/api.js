@@ -1,6 +1,6 @@
 const express = require('express');
-const authController = require('C:\Users\Adriana\Desktop\DEV\DeOlhoNoJogo2\backend\controllers\Authcontroller.js');
-const gamesController = require('C:\Users\Adriana\Desktop\DEV\DeOlhoNoJogo2\backend\controllers\gamesController');
+const authController = require('../controllers/authController');
+const gamesController = require('../controllers/gamesController');
 const { authMiddleware, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
