@@ -26,44 +26,61 @@ class Database {
     }
 
     async setupDatabase() {
-        // Ler e executar schema
-        const schemaPath = path.join(__dirname, 'schema.sql');
-        const schema = fs.readFileSync(schemaPath, 'utf8');
-        
-        await this.exec(schema);
-        console.log('✅ Schema do banco de dados criado');
+        try {
+            // Habilitar foreign keys
+            await this.run('PRAGMA foreign_keys = ON');
+            await this.run('PRAGMA journal_mode = WAL');
 
-        // Verificar se já existem dados IATA
-        const count = await this.get('SELECT COUNT(*) as count FROM iata_codes');
-        
-        if (count.count === 0) {
-            const iataPath = path.join(__dirname, 'iata_data.sql');
-            const iataData = fs.readFileSync(iataPath, 'utf8');
-            await this.exec(iataData);
-            console.log('✅ Dados IATA carregados');
+            // Ler e executar schema
+            const schemaPath = path.join(__dirname, 'schema.sql');
+            const schema = fs.readFileSync(schemaPath, 'utf8');
+            
+            // Dividir em statements individuais e executar
+            const statements = schema.split(';').filter(s => s.trim());
+            
+            for (const statement of statements) {
+                if (statement.trim()) {
+                    await this.run(statement);
+                }
+            }
+            
+            console.log('✅ Schema do banco de dados criado');
+
+            // Verificar se já existem dados IATA
+            const count = await this.get('SELECT COUNT(*) as count FROM iata_codes');
+            
+            if (count.count === 0) {
+                const iataPath = path.join(__dirname, 'iata_data.sql');
+                const iataData = fs.readFileSync(iataPath, 'utf8');
+                
+                // Dividir em statements individuais
+                const iataStatements = iataData.split(';').filter(s => s.trim());
+                
+                for (const statement of iataStatements) {
+                    if (statement.trim()) {
+                        await this.run(statement);
+                    }
+                }
+                
+                console.log('✅ Dados IATA carregados');
+            }
+        } catch (error) {
+            console.error('Erro ao configurar banco de dados:', error);
+            throw error;
         }
-
-        // Configurações de performance
-        await this.exec('PRAGMA journal_mode = WAL');
-        await this.exec('PRAGMA foreign_keys = ON');
-    }
-
-    // Método para executar queries que não retornam dados
-    exec(sql, params = []) {
-        return new Promise((resolve, reject) => {
-            this.db.exec(sql, params, (err) => {
-                if (err) reject(err);
-                else resolve();
-            });
-        });
     }
 
     // Método para executar queries que retornam dados (SELECT)
     all(sql, params = []) {
         return new Promise((resolve, reject) => {
             this.db.all(sql, params, (err, rows) => {
-                if (err) reject(err);
-                else resolve(rows);
+                if (err) {
+                    console.error('Erro no SQL:', sql);
+                    console.error('Params:', params);
+                    reject(err);
+                } else {
+                    resolve(rows);
+                }
             });
         });
     }
@@ -72,8 +89,13 @@ class Database {
     get(sql, params = []) {
         return new Promise((resolve, reject) => {
             this.db.get(sql, params, (err, row) => {
-                if (err) reject(err);
-                else resolve(row);
+                if (err) {
+                    console.error('Erro no SQL:', sql);
+                    console.error('Params:', params);
+                    reject(err);
+                } else {
+                    resolve(row);
+                }
             });
         });
     }
@@ -82,8 +104,13 @@ class Database {
     run(sql, params = []) {
         return new Promise((resolve, reject) => {
             this.db.run(sql, params, function(err) {
-                if (err) reject(err);
-                else resolve({ id: this.lastID, changes: this.changes });
+                if (err) {
+                    console.error('Erro no SQL:', sql);
+                    console.error('Params:', params);
+                    reject(err);
+                } else {
+                    resolve({ id: this.lastID, changes: this.changes });
+                }
             });
         });
     }
@@ -91,10 +118,14 @@ class Database {
     // Fechar conexão
     close() {
         return new Promise((resolve, reject) => {
-            this.db.close((err) => {
-                if (err) reject(err);
-                else resolve();
-            });
+            if (this.db) {
+                this.db.close((err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            } else {
+                resolve();
+            }
         });
     }
 }
