@@ -2,7 +2,6 @@ from pydantic import BaseModel
 from typing import Optional
 
 
-# --- Auth ---
 class UsuarioCreate(BaseModel):
     email: str
     senha: str
@@ -21,9 +20,17 @@ class TokenResponse(BaseModel):
     user_id: int
     nome: str
     cidade_origem: str
+    clube_coracao_id:   Optional[int]  = None
+    clube_coracao_nome: Optional[str]  = None
+    clube_coracao_logo: Optional[str]  = None
 
 
-# --- Diário ---
+class ClubeCoracaoPayload(BaseModel):
+    clube_id:   int
+    nome:       str
+    logo:       str
+
+
 class JogoPayload(BaseModel):
     id: int
     data_fmt: str

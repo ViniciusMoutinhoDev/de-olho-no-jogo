@@ -15,11 +15,14 @@ def inicializar_banco() -> None:
 
         c.execute("""
             CREATE TABLE IF NOT EXISTS usuarios (
-                id              INTEGER PRIMARY KEY AUTOINCREMENT,
-                email           TEXT UNIQUE NOT NULL,
-                senha_hash      TEXT NOT NULL,
-                nome            TEXT,
-                cidade_origem   TEXT DEFAULT 'São Paulo'
+                id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                email               TEXT UNIQUE NOT NULL,
+                senha_hash          TEXT NOT NULL,
+                nome                TEXT,
+                cidade_origem       TEXT DEFAULT 'São Paulo',
+                clube_coracao_id    INTEGER,
+                clube_coracao_nome  TEXT,
+                clube_coracao_logo  TEXT
             )
         """)
 
@@ -51,10 +54,17 @@ def inicializar_banco() -> None:
             )
         """)
 
-        # Migrações seguras
-        for col, tipo in [("user_id", "INTEGER"), ("home_logo", "TEXT"), ("away_logo", "TEXT")]:
+        migrations = [
+            ("diario",    "user_id",              "INTEGER"),
+            ("diario",    "home_logo",             "TEXT"),
+            ("diario",    "away_logo",             "TEXT"),
+            ("usuarios",  "clube_coracao_id",      "INTEGER"),
+            ("usuarios",  "clube_coracao_nome",    "TEXT"),
+            ("usuarios",  "clube_coracao_logo",    "TEXT"),
+        ]
+        for table, col, tipo in migrations:
             try:
-                c.execute(f"ALTER TABLE diario ADD COLUMN {col} {tipo}")
+                c.execute(f"ALTER TABLE {table} ADD COLUMN {col} {tipo}")
             except Exception:
                 pass
 
