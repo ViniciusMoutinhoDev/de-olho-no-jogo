@@ -1,21 +1,34 @@
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 
 export default function Navbar({ user, onLogout }) {
+  const { pathname } = useLocation()
+
   return (
-    <nav style={{
-      background: '#1a1a2e', color: '#fff',
-      padding: '12px 24px', display: 'flex',
-      alignItems: 'center', justifyContent: 'space-between',
-    }}>
-      <Link to="/" style={{ color: '#fff', fontWeight: 700, fontSize: '1.1rem' }}>
-        ⚽ De Olho No Jogo
+    <nav className="navbar">
+      <Link to="/" className="navbar-brand">
+        ⚽ De Olho <span>No Jogo</span>
       </Link>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <Link to="/"      style={{ color: '#ccc', fontSize: '0.9rem' }}>Buscar</Link>
-        <Link to="/diary" style={{ color: '#ccc', fontSize: '0.9rem' }}>Meu Diário</Link>
-        <span style={{ color: '#888', fontSize: '0.85rem' }}>{user?.nome}</span>
-        <button onClick={onLogout}
-          style={{ background: '#e53935', color: '#fff', padding: '6px 14px', fontSize: '0.85rem' }}>
+
+      <div className="navbar-links">
+        {user?.clube_coracao_nome && (
+          <Link to="/" className="navbar-clube">
+            {user.clube_coracao_logo && (
+              <img src={user.clube_coracao_logo} alt="" style={{ width: 20, height: 20, objectFit: 'contain' }} />
+            )}
+            <span style={{ color: 'var(--green)', fontWeight: 600 }}>{user.clube_coracao_nome}</span>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>· {user.nome}</span>
+          </Link>
+        )}
+
+        <Link to="/"      className={`nav-link ${pathname === '/'      ? 'active' : ''}`}>Início</Link>
+        <Link to="/diary" className={`nav-link ${pathname === '/diary' ? 'active' : ''}`}>Diário</Link>
+
+        {!user?.clube_coracao_nome && (
+          <span className="navbar-user">{user?.nome}</span>
+        )}
+
+        <button onClick={onLogout} className="btn btn-ghost"
+          style={{ padding: '5px 12px', fontSize: '0.8rem' }}>
           Sair
         </button>
       </div>

@@ -24,23 +24,41 @@ export default function Login() {
   }
 
   return (
-    <div style={{ maxWidth: 380, margin: '80px auto', padding: '32px 24px',
-      background: '#fff', borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
-      <h2 style={{ marginBottom: 24, textAlign: 'center' }}>⚽ De Olho No Jogo</h2>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <input placeholder="E-mail" type="email" required
-          value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-        <input placeholder="Senha" type="password" required
-          value={form.senha} onChange={e => setForm({ ...form, senha: e.target.value })} />
-        {error && <p style={{ color: '#e53935', fontSize: '0.85rem' }}>{error}</p>}
-        <button type="submit" disabled={loading}
-          style={{ background: '#1a1a2e', color: '#fff', padding: '10px', marginTop: 4 }}>
-          {loading ? 'Entrando...' : 'Entrar'}
-        </button>
-      </form>
-      <p style={{ marginTop: 16, textAlign: 'center', fontSize: '0.85rem', color: '#666' }}>
-        Não tem conta? <Link to="/register" style={{ color: '#2196F3' }}>Cadastre-se</Link>
-      </p>
+    <div className="auth-wrapper">
+      <div className="auth-card">
+        <div className="auth-logo">
+          <span className="auth-logo-icon">⚽</span>
+          <h1>De Olho <span>No Jogo</span></h1>
+          <p className="auth-subtitle">Planeje sua viagem para o próximo jogo</p>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div className="form-group">
+            <label className="form-label">E-mail</label>
+            <input
+              type="email" placeholder="seu@email.com" required
+              value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
+            />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Senha</label>
+            <input
+              type="password" placeholder="••••••••" required
+              value={form.senha} onChange={e => setForm({ ...form, senha: e.target.value })}
+            />
+          </div>
+          {error && <p className="form-error">{error}</p>}
+          <button type="submit" className="btn btn-primary" disabled={loading}
+            style={{ width: '100%', justifyContent: 'center', padding: '11px', marginTop: '0.5rem' }}>
+            {loading ? <><span className="spinner"></span> Entrando...</> : 'Entrar'}
+          </button>
+        </form>
+
+        <div className="auth-divider" />
+        <p className="auth-footer">
+          Não tem conta? <Link to="/register">Cadastre-se grátis</Link>
+        </p>
+      </div>
     </div>
   )
 }

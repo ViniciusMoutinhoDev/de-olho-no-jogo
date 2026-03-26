@@ -18,6 +18,8 @@ export default function ClubSearch() {
     try {
       const { data } = await api.get(`/api/clubs/search?nome=${encodeURIComponent(search)}`)
       setClub(data)
+      setTab('next')
+      await fetchMatches(data.id, 'next')
     } catch {
       alert('Clube não encontrado')
     } finally {
@@ -25,57 +27,77 @@ export default function ClubSearch() {
     }
   }
 
-  async function loadMatches(tipo) {
+  async function switchTab(tipo) {
     setTab(tipo)
-    await fetchMatches(club.id, tipo)
+    if (club) await fetchMatches(club.id, tipo)
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 16px' }}>
-      <h2 style={{ marginBottom: 20 }}>🔍 Buscar Clube</h2>
+    <div className="page">
+      <div className="page-header">
+        <h2>Explorar Clube</h2>
+      </div>
 
-      <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10, marginBottom: 24 }}>
-        <input placeholder="Nome do clube..." value={search}
-          onChange={e => setSearch(e.target.value)} style={{ maxWidth: 360 }} />
-        <button type="submit" disabled={searching}
-          style={{ background: '#1a1a2e', color: '#fff', whiteSpace: 'nowrap' }}>
-          {searching ? 'Buscando...' : 'Buscar'}
+      <form onSubmit={handleSearch} className="search-bar" style={{ marginBottom: '1.5rem' }}>
+        <input
+          placeholder="Buscar time... ex: Corinthians, Real Madrid"
+          value={search} onChange={e => setSearch(e.target.value)}
+        />
+        <button type="submit" className="btn btn-primary" disabled={searching}>
+          {searching ? <span className="spinner" /> : 'Buscar'}
         </button>
       </form>
 
       {club && (
         <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20,
-            padding: '16px', background: '#fff', borderRadius: 10,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>
-            <img src={club.logo} alt={club.nome} style={{ width: 60, height: 60, objectFit: 'contain' }} />
-            <div>
-              <h3 style={{ margin: 0 }}>{club.nome}</h3>
-              <span style={{ color: '#666', fontSize: '0.85rem' }}>{club.pais}</span>
+          <div className="club-header animate-slide-up">
+            <img src={club.logo} alt={club.nome} className="club-logo" />
+            <div className="club-info">
+              <h2>{club.nome}</h2>
+              <span className="club-meta">{club.pais} · ID {club.id}</span>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+          <div className="tabs">
             {[['next', '📅 Próximos'], ['last', '📜 Histórico']].map(([tipo, label]) => (
-              <button key={tipo} onClick={() => loadMatches(tipo)}
-                style={{ background: tab === tipo ? '#1a1a2e' : '#e0e0e0',
-                  color: tab === tipo ? '#fff' : '#333' }}>
+              <button key={tipo} onClick={() => switchTab(tipo)}
+                className={`tab-btn ${tab === tipo ? 'active' : ''}`}>
                 {label}
               </button>
             ))}
           </div>
 
-          {loading && <p style={{ color: '#666' }}>Carregando jogos...</p>}
+          {loading && (
+            <div className="loading">
+              <span className="spinner" />
+              Carregando jogos...
+            </div>
+          )}
 
-          {matches.map(jogo => (
-            <MatchCard
-              key={jogo.id}
-              jogo={jogo}
-              modoViagem={tab === 'next'}
-              cidadeOrigem={user.cidade_origem}
-            />
+          {!loading && matches.length === 0 && (
+            <div className="empty-state">
+              <span className="empty-state-icon">📭</span>
+              <p>Nenhum jogo encontrado para este período</p>
+            </div>
+          )}
+
+          {matches.map((jogo, i) => (
+            <div key={jogo.id} style={{ animationDelay: `${i * 0.04}s` }}>
+              <MatchCard
+                jogo={jogo}
+                modoViagem={tab === 'next'}
+                cidadeOrigem={user.cidade_origem}
+              />
+            </div>
           ))}
         </>
+      )}
+
+      {!club && (
+        <div className="empty-state" style={{ marginTop: '4rem' }}>
+          <span className="empty-state-icon">🔍</span>
+          <p>Busque um clube para ver os jogos e planejar sua viagem</p>
+        </div>
       )}
     </div>
   )

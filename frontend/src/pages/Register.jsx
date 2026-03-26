@@ -23,26 +23,46 @@ export default function Register() {
     }
   }
 
-  const f = (field) => ({ value: form[field], onChange: e => setForm({ ...form, [field]: e.target.value }) })
+  const f = field => ({ value: form[field], onChange: e => setForm({ ...form, [field]: e.target.value }) })
 
   return (
-    <div style={{ maxWidth: 380, margin: '60px auto', padding: '32px 24px',
-      background: '#fff', borderRadius: 12, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
-      <h2 style={{ marginBottom: 24, textAlign: 'center' }}>Criar Conta</h2>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <input placeholder="Nome" required {...f('nome')} />
-        <input placeholder="E-mail" type="email" required {...f('email')} />
-        <input placeholder="Senha" type="password" required {...f('senha')} />
-        <input placeholder="Cidade de origem" {...f('cidade_origem')} />
-        {error && <p style={{ color: '#e53935', fontSize: '0.85rem' }}>{error}</p>}
-        <button type="submit" disabled={loading}
-          style={{ background: '#1a1a2e', color: '#fff', padding: '10px', marginTop: 4 }}>
-          {loading ? 'Cadastrando...' : 'Cadastrar'}
-        </button>
-      </form>
-      <p style={{ marginTop: 16, textAlign: 'center', fontSize: '0.85rem', color: '#666' }}>
-        Já tem conta? <Link to="/login" style={{ color: '#2196F3' }}>Entrar</Link>
-      </p>
+    <div className="auth-wrapper">
+      <div className="auth-card">
+        <div className="auth-logo">
+          <span className="auth-logo-icon">⚽</span>
+          <h1>Criar <span>Conta</span></h1>
+          <p className="auth-subtitle">Comece a planejar suas viagens</p>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div className="form-group">
+            <label className="form-label">Nome</label>
+            <input placeholder="Seu nome" required {...f('nome')} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">E-mail</label>
+            <input type="email" placeholder="seu@email.com" required {...f('email')} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Senha</label>
+            <input type="password" placeholder="••••••••" required {...f('senha')} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Cidade de origem</label>
+            <input placeholder="São Paulo" {...f('cidade_origem')} />
+          </div>
+          {error && <p className="form-error">{error}</p>}
+          <button type="submit" className="btn btn-primary" disabled={loading}
+            style={{ width: '100%', justifyContent: 'center', padding: '11px', marginTop: '0.5rem' }}>
+            {loading ? <><span className="spinner"></span> Criando...</> : 'Criar conta'}
+          </button>
+        </form>
+
+        <div className="auth-divider" />
+        <p className="auth-footer">
+          Já tem conta? <Link to="/login">Entrar</Link>
+        </p>
+      </div>
     </div>
   )
 }
