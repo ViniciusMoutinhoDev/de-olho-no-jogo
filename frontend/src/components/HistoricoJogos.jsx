@@ -4,17 +4,14 @@ import MatchCard from './MatchCard'
 
 const ANO_ATUAL = new Date().getFullYear()
 
-// Anos que carregam automaticamente (lazy scroll)
 const ANOS_AUTO = Array.from({ length: ANO_ATUAL - 2019 }, (_, i) => ANO_ATUAL - i)
 
-// Grupos históricos que carregam só ao clicar
 const GRUPOS_HISTORICOS = [
   { label: '2015 – 2019', anos: [2019, 2018, 2017, 2016, 2015] },
   { label: '2010 – 2014', anos: [2014, 2013, 2012, 2011, 2010] },
   { label: 'Antes de 2010', anos: [2009, 2008, 2007, 2006, 2005] },
 ]
 
-// Componente de um bloco de ano — carrega quando fica visível
 function BlocoAno({ clubId, ano, cidadeOrigem, autoLoad = false }) {
   const [jogos, setJogos] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -22,8 +19,16 @@ function BlocoAno({ clubId, ano, cidadeOrigem, autoLoad = false }) {
   const ref = useRef(null)
   const carregado = useRef(false)
 
+  // ✅ Reset completo quando clube ou ano mudam
+  useEffect(() => {
+    setJogos(null)
+    setLoading(false)
+    setAberto(autoLoad)
+    carregado.current = false
+  }, [clubId, ano])
+
   const carregar = useCallback(async () => {
-    if (carregado.current || loading) return
+    if (carregado.current) return
     carregado.current = true
     setLoading(true)
     try {
@@ -36,16 +41,17 @@ function BlocoAno({ clubId, ano, cidadeOrigem, autoLoad = false }) {
     }
   }, [clubId, ano])
 
-  // Intersection Observer — carrega quando entra na viewport
+  // ✅ Observer reinicia quando clubId ou ano mudam
   useEffect(() => {
     if (!autoLoad) return
+    carregado.current = false
     const observer = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) { carregar(); observer.disconnect() } },
       { rootMargin: '300px' }
     )
     if (ref.current) observer.observe(ref.current)
     return () => observer.disconnect()
-  }, [autoLoad, carregar])
+  }, [autoLoad, carregar, clubId, ano])
 
   function toggle() {
     setAberto(v => !v)
@@ -56,7 +62,6 @@ function BlocoAno({ clubId, ano, cidadeOrigem, autoLoad = false }) {
 
   return (
     <div ref={ref} style={{ marginBottom: '1rem' }}>
-      {/* Header do ano */}
       <button
         onClick={toggle}
         style={{
@@ -94,7 +99,6 @@ function BlocoAno({ clubId, ano, cidadeOrigem, autoLoad = false }) {
         }}>›</span>
       </button>
 
-      {/* Lista de jogos */}
       {aberto && (
         <div style={{
           border: '1px solid var(--border)', borderTop: 'none',
@@ -129,7 +133,6 @@ function BlocoAno({ clubId, ano, cidadeOrigem, autoLoad = false }) {
   )
 }
 
-// Componente de grupo histórico (2015-2019, 2010-2014, etc.)
 function GrupoHistorico({ grupo, clubId, cidadeOrigem }) {
   const [aberto, setAberto] = useState(false)
 
@@ -176,11 +179,9 @@ function GrupoHistorico({ grupo, clubId, cidadeOrigem }) {
   )
 }
 
-// Componente principal
 export default function HistoricoJogos({ clubId, cidadeOrigem }) {
   return (
     <div>
-      {/* Anos recentes — carregam conforme scroll */}
       {ANOS_AUTO.map(ano => (
         <BlocoAno
           key={ano}
@@ -191,7 +192,6 @@ export default function HistoricoJogos({ clubId, cidadeOrigem }) {
         />
       ))}
 
-      {/* Grupos históricos — carregam ao clicar */}
       <div style={{
         fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em',
         textTransform: 'uppercase', color: 'var(--text-muted)',

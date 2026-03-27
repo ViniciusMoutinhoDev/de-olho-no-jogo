@@ -21,10 +21,22 @@ def search_clube(nome: str = Query(..., min_length=2)):
 @router.get("/{club_id}/matches")
 def matches_clube(
     club_id: int,
-    tipo: str = Query("next", pattern="^(next|last)$"),
+    tipo: str = Query("all"),
     limite_paginas: int = Query(None, ge=1, le=20),
+    ano: int = Query(None),
 ):
-    return buscar_jogos(club_id, tipo=tipo, limite_paginas=limite_paginas)
+    if tipo in ["next", "last"]:
+        return buscar_jogos(club_id, tipo=tipo, limite_paginas=limite_paginas)
+
+    if ano:
+        jogos = buscar_jogos_por_ano(club_id, ano)
+        return {"ano": ano, "total": len(jogos), "jogos": jogos}
+
+    # default = todos jogos do ano atual
+    from datetime import datetime
+    ano_atual = datetime.now().year
+    jogos = buscar_jogos_por_ano(club_id, ano_atual)
+    return {"ano": ano_atual, "total": len(jogos), "jogos": jogos}
 
 
 @router.get("/{club_id}/historico/{ano}")
