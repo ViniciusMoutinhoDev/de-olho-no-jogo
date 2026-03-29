@@ -82,3 +82,21 @@ def atualizar_cidade_origem(user_id: int, cidade: str) -> bool:
         return False
     finally:
         conn.close()
+
+
+def atualizar_enderecos(user_id: int, tipo: str, endereco: str) -> bool:
+    conn = conectar()
+    try:
+        c = conn.cursor()
+        # Apenas permite campos específicos para evitar SQL Injection
+        if tipo not in ("casa", "trabalho"):
+            return False
+            
+        coluna = f"endereco_{tipo}"
+        c.execute(f"UPDATE usuarios SET {coluna} = ? WHERE id = ?", (endereco, user_id))
+        conn.commit()
+        return c.rowcount > 0
+    except Exception:
+        return False
+    finally:
+        conn.close()

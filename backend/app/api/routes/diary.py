@@ -34,3 +34,16 @@ def remove_jogo(id_sofascore: int, user_id: int = Depends(get_current_user_id)):
 @router.get("/{id_sofascore}/check")
 def check_jogo(id_sofascore: int, user_id: int = Depends(get_current_user_id)):
     return {"saved": verificar_jogo_no_diario(user_id, id_sofascore)}
+
+
+@router.patch("/{id_sofascore}")
+def update_jogo_gastos(
+    id_sofascore: int, 
+    payload: dict, 
+    user_id: int = Depends(get_current_user_id)
+):
+    from app.db.repositories.diary_repo import atualizar_gastos_diario
+    ok = atualizar_gastos_diario(user_id, id_sofascore, payload)
+    if not ok:
+        raise HTTPException(status_code=400, detail="Erro ao atualizar jogo no diario")
+    return {"message": "Atualizado com sucesso"}

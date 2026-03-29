@@ -129,25 +129,166 @@ def _links_onibus(o: str, d: str, data_iso: str | None) -> dict:
     }
 
 
+# Mapeamento cidade -> IATA (aeroporto principal da cidade/região)
+# Inclui cidades brasileiras e internacionais mais comuns
+_IATA_MAP: dict[str, str] = {
+    # Brasil - Capitais e grandes cidades
+    "s\u00e3o paulo":        "GRU",  "sao paulo":         "GRU",
+    "guarulhos":            "GRU",  "campinas":           "VCP",
+    "rio de janeiro":       "GIG",  "gale\u00e3o":         "GIG",
+    "belo horizonte":       "CNF",  "confins":            "CNF",
+    "bras\u00edlia":         "BSB",  "brasilia":           "BSB",
+    "salvador":             "SSA",
+    "recife":               "REC",
+    "fortaleza":            "FOR",
+    "manaus":               "MAO",
+    "bel\u00e9m":            "BEL",  "belem":              "BEL",
+    "porto alegre":         "POA",
+    "curitiba":             "CWB",
+    "florian\u00f3polis":    "FLN",  "florianopolis":      "FLN",
+    "natal":                "NAT",
+    "macei\u00f3":           "MCZ",  "maceio":             "MCZ",
+    "jo\u00e3o pessoa":      "JPA",  "joao pessoa":        "JPA",
+    "aracaju":              "AJU",
+    "macap\u00e1":           "MCP",  "macapa":             "MCP",
+    "boa vista":            "BVB",
+    "porto velho":          "PVH",
+    "rio branco":           "RBR",
+    "palmas":               "PMW",
+    "goi\u00e2nia":          "GYN",  "goiania":            "GYN",
+    "cuiab\u00e1":           "CGB",  "cuiaba":             "CGB",
+    "campo grande":         "CGR",
+    "vit\u00f3ria":           "VIX",  "vitoria":            "VIX",
+    "s\u00e3o lu\u00eds":     "SLZ",  "sao luis":           "SLZ",
+    "macei\u00f3":           "MCZ",
+    "bauru":                "BAU",
+    "ribeir\u00e3o preto":   "RAO",  "ribeirao preto":     "RAO",
+    "s\u00e3o jos\u00e9 do rio preto": "SJP",
+    "londrina":             "LDB",
+    "maring\u00e1":          "MGF",  "maringa":            "MGF",
+    "joinville":            "JOI",
+    "blumenau":             "BNU",
+    "uberlandia":           "UDI",  "uberl\u00e2ndia":     "UDI",
+    "juiz de fora":         "JDF",
+    "montes claros":        "MOC",
+    "ilh\u00e9us":           "IOS",  "ilheus":             "IOS",
+    "foz do igua\u00e7u":    "IGU",  "foz do iguacu":     "IGU",
+    "cascavel":             "CAC",
+    "pelotas":              "PET",
+    "passo fundo":          "PFB",
+    "caxias do sul":        "CXJ",
+    "uruguaiana":           "URG",
+    # Internacional
+    "buenos aires":         "EZE",
+    "montevideo":           "MVD",
+    "santiago":             "SCL",
+    "lima":                 "LIM",
+    "bogota":               "BOG",
+    "caracas":              "CCS",
+    "miami":                "MIA",
+    "new york":             "JFK",
+    "london":               "LHR",  "londres":            "LHR",
+    "paris":                "CDG",
+    "madrid":               "MAD",
+    "lisbon":               "LIS",  "lisboa":             "LIS",
+    "rome":                 "FCO",  "roma":               "FCO",
+    "amsterdam":            "AMS",
+    "frankfurt":            "FRA",
+    "tokyo":                "NRT",  "toquio":             "NRT",
+    "dubai":                "DXB",
+    "doha":                 "DOH",
+}
+
+def _cidade_para_iata(cidade: str) -> str | None:
+    """Retorna código IATA da cidade, ou None se não mapeada."""
+    # Tenta match direto (corta sigla de país como ", Brazil")
+    key = cidade.split(",")[0].strip().lower()
+    return _IATA_MAP.get(key)
+
+
+def _google_flights_url(orig_iata: str, dest_iata: str, data_ida: str, data_volta: str) -> str:
+    """
+    Gera URL estruturada do Google Flights no formato real:
+    https://www.google.com/travel/flights/search?tfs=...
+
+    Usa formato simplificado de query string que o Google aceita:
+    /search?q=Flights+from+GRU+to+POA+on+2026-05-31+returning+2026-06-01
+    
+    Formato profissional alternativo (link deep sem codificação TFS):
+    https://www.google.com/travel/flights?q=Voos+GRU+POA+2026-05-31
+    """
+    # URL limpa e deep que o Google Flights aceita diretamente
+    query = f"Voos de {orig_iata} para {dest_iata}"
+    if data_ida:
+        query += f" em {data_ida}"
+    if data_volta:
+        query += f" voltando {data_volta}"
+    
+    # Formato alternativo mais estruturado - simples e funcional
+    base = "https://www.google.com/travel/flights/search"
+    params = urllib.parse.urlencode({
+        "q": f"Flights from {orig_iata} to {dest_iata}",
+        "curr": "BRL",
+        "gl": "BR",
+        "hl": "pt-BR",
+    })
+    
+    # URL principal: query legivel + parâmetros
+    url_principal = f"{base}?{params}"
+    if data_ida:
+        url_principal += f"&dates={data_ida}"
+        if data_volta:
+            url_principal += f",{data_volta}"
+    
+    return url_principal
+
+
 def _links_aviao(o: str, d: str, data_iso: str | None) -> dict:
     ida = volta = ""
     if data_iso:
         try:
-            dt   = datetime.fromisoformat(data_iso)
-            ida  = (dt - timedelta(days=1)).strftime("%Y-%m-%d")
-            volta= (dt + timedelta(days=1)).strftime("%Y-%m-%d")
+            dt    = datetime.fromisoformat(data_iso)
+            ida   = (dt - timedelta(days=1)).strftime("%Y-%m-%d")
+            volta = (dt + timedelta(days=1)).strftime("%Y-%m-%d")
         except Exception:
             pass
 
-    gf = f"https://www.google.com/travel/flights?q={urllib.parse.quote(f'Voos de {o} para {d} em {ida} voltando {volta}')}"
+    # Tenta gerar URL com IATA (métodos profissional)
+    orig_iata = _cidade_para_iata(o)
+    dest_iata = _cidade_para_iata(d)
 
+    if orig_iata and dest_iata and ida:
+        # URL Google Flights com IATA e datas — formato que o usuário compartilhou
+        gf = (
+            f"https://www.google.com/travel/flights/search"
+            f"?q=Flights+from+{orig_iata}+to+{dest_iata}"
+            f"&curr=BRL&gl=BR&hl=pt-BR"
+            + (f"&dates={ida},{volta}" if volta else f"&dates={ida}")
+        )
+    elif orig_iata and dest_iata:
+        gf = (
+            f"https://www.google.com/travel/flights/search"
+            f"?q=Flights+from+{orig_iata}+to+{dest_iata}&curr=BRL&gl=BR&hl=pt-BR"
+        )
+    else:
+        # Fallback: busca por nome das cidades
+        gf = (
+            f"https://www.google.com/travel/flights?q="
+            + urllib.parse.quote(f"Voos de {o} para {d}" + (f" em {ida}" if ida else ""))
+            + "&curr=BRL&gl=BR&hl=pt-BR"
+        )
+
+    # Skyscanner: usa slugs de cidades
     def sky_slug(c): return c.split(",")[0].strip().lower().replace(" ", "-")
     try:
-        sky_ida  = datetime.fromisoformat(ida).strftime("%y%m%d") if ida else ""
-        sky_vol  = datetime.fromisoformat(volta).strftime("%y%m%d") if volta else ""
+        sky_ida = datetime.fromisoformat(ida).strftime("%y%m%d") if ida else ""
+        sky_vol = datetime.fromisoformat(volta).strftime("%y%m%d") if volta else ""
+        # Skyscanner prefere código IATA na URL
+        o_sky = orig_iata.lower() if orig_iata else sky_slug(o)
+        d_sky = dest_iata.lower() if dest_iata else sky_slug(d)
         sky = (
             f"https://www.skyscanner.com.br/transporte/passagens-aereas"
-            f"/{sky_slug(o)}/{sky_slug(d)}/{sky_ida}/{sky_vol}"
+            f"/{o_sky}/{d_sky}/{sky_ida}/{sky_vol}"
             if sky_ida else "https://www.skyscanner.com.br"
         )
     except Exception:
@@ -213,17 +354,33 @@ def calcular_todas_opcoes(
 
 
 def _montar_opcoes(km: int, o: str, d: str, data_iso: str | None) -> list[dict]:
+    # Lógica de Deslocamento Urbano / Local
+    if km < 50:
+        return [
+            {
+                "modal": "transporte_local", 
+                "emoji": "🚇", 
+                "label": "Trânsito Local",
+                "custo": {"min": 5, "max": 60}, 
+                "duracao_h": _duracao_carro(km) or 0.5,
+                "links": {
+                    "google_maps": f"https://www.google.com/maps/dir/?api=1&origin={urllib.parse.quote(o)}&destination={urllib.parse.quote(d)}",
+                    "waze": f"https://waze.com/ul?q={urllib.parse.quote(d)}&navigate=yes",
+                    "uber": f"https://m.uber.com/ul?action=setPickup&dropoff[formatted_address]={urllib.parse.quote(d)}"
+                },
+                "recomendado": True
+            }
+        ]
+
+    # Viagens Intermunicipais / Estaduais / Internacionais
     opcoes = [
         {"modal": "carro",  "emoji": "🚗", "label": "Carro",
          "custo": _custo_carro(km),  "duracao_h": _duracao_carro(km),
          "links": _links_carro(o, d),  "recomendado": False},
+        {"modal": "onibus", "emoji": "🚌", "label": "Ônibus",
+         "custo": _custo_onibus(km), "duracao_h": _duracao_onibus(km),
+         "links": _links_onibus(o, d, data_iso), "recomendado": False}
     ]
-    if km >= 50:
-        opcoes.append(
-            {"modal": "onibus", "emoji": "🚌", "label": "Ônibus",
-             "custo": _custo_onibus(km), "duracao_h": _duracao_onibus(km),
-             "links": _links_onibus(o, d, data_iso), "recomendado": False}
-        )
     if km >= 200:
         opcoes.append(
             {"modal": "aviao",  "emoji": "✈️",  "label": "Avião",

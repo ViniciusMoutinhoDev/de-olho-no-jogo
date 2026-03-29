@@ -139,6 +139,55 @@ def buscar_ligas_por_categoria(pais_id: str) -> dict:
     except Exception as e:
         logger.error(f"Erro ao parsear ligas da categoria {category_id}: {e}")
 
+    # ── Filtro curado para o Brasil ──────────────────────────────────────────
+    # O SofaScore retorna >200 ligas para o Brasil, mas a maioria é irrelevante.
+    # Mantemos apenas os campeonatos com alta visibilidade nacional ou estadual.
+    if pais_id == "brasil":
+        BRASIL_PRINCIPAIS_KEYWORDS = [
+            "brasileiro", "brasileirão",
+            "série a", "serie a",
+            "série b", "serie b",
+            "série c", "serie c",
+            "série d", "serie d",
+            "copa do brasil",
+            "paulista", "paulistão", "paulistao",
+            "carioca", "rio de janeiro",
+            "mineiro", "minas gerais",
+            "gaúcho", "gaucho", "riograndense",
+            "paranaense", "curitibano",
+            "pernambucano",
+            "baiano",
+            "catarinense",
+            "goiano",
+            "brasiliense",
+            "capixaba",
+            "potyguar", "potiguar",
+            "alagoano",
+            "paraibano",
+            "sergipano",
+            "piauiense",
+            "maranhense",
+            "amazônia", "amazonia", "amazonense",
+            "paraense", "pará",
+            "roraimense",
+            "amapaense",
+            "acreano",
+            "sul-mato-grossense",
+            "mato-grossense",
+            "tocantinense",
+            "supercopa",
+        ]
+        def _e_principal_br(liga: dict) -> bool:
+            nome_l = liga["nome"].lower()
+            return any(kw in nome_l for kw in BRASIL_PRINCIPAIS_KEYWORDS)
+
+        # Para o Brasil: principais são somente os campeonatos relevantes
+        principals_filtrados = [l for l in principais if _e_principal_br(l)]
+        # Se o filtro deixou muito poucos (<5), mantém a lista original
+        if len(principals_filtrados) >= 5:
+            principais = principals_filtrados
+        logger.info(f"Brasil: {len(principais)} ligas principais ({len(todas)} no total)")
+
     # Ordena: ligas antes de copas, depois alfabético
     _sort = lambda lst: sorted(lst, key=lambda x: (x["tipo"] == "copa", x["nome"].lower()))
     resultado = {
@@ -149,6 +198,8 @@ def buscar_ligas_por_categoria(pais_id: str) -> dict:
     if resultado["principais"] or resultado["todas"]:
         _cache_ligas[cache_key] = resultado
     return resultado
+
+
 
 
 

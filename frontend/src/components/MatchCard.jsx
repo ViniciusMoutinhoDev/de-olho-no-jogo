@@ -1,11 +1,15 @@
 import { useState } from 'react'
 import api from '../api/client'
+import { Calendar, MapPin, Plane, Car, Bus, Plus, Check, Loader2, Navigation, Compass, ExternalLink, ChevronDown, ChevronRight, X } from 'lucide-react'
+import FinancePanel from './FinancePanel'
 
-export default function MatchCard({ jogo, modoViagem = false, cidadeOrigem = '', onDiaryChange, onCidadeAtualizada }) {
+export default function MatchCard({ jogo, modoViagem = false, user = null, cidadeOrigem = '', onDiaryChange, onCidadeAtualizada }) {
+  const origemBase = user?.cidade_origem || cidadeOrigem
   const [saved, setSaved]             = useState(jogo._saved || false)
   const [loadingTravel, setLoadingTravel] = useState(false)
   const [travelData, setTravelData]   = useState(null)
   const [travelOpen, setTravelOpen]   = useState(false)
+  const [financeOpen, setFinanceOpen] = useState(false)
 
   async function toggleDiary() {
     try {
@@ -16,6 +20,7 @@ export default function MatchCard({ jogo, modoViagem = false, cidadeOrigem = '',
           id: jogo.id, data_fmt: jogo.data_fmt, home: jogo.home, away: jogo.away,
           estadio: jogo.estadio, cidade: jogo.cidade, placar: jogo.placar,
           torneio: jogo.torneio, home_logo: jogo.home_logo, away_logo: jogo.away_logo,
+          status: modoViagem ? 'vou' : 'fui'
         })
       }
       setSaved(!saved)
@@ -31,22 +36,39 @@ export default function MatchCard({ jogo, modoViagem = false, cidadeOrigem = '',
       setTravelData({ erro: 'Localização do estádio indisponível para este jogo.' })
       setTravelOpen(true); return
     }
-    if (!cidadeOrigem) {
+
+    // Sem cidade de origem configurada: pedem pra configurar
+    if (!origemBase) {
       setTravelData({ tipo: 'sem_cidade' })
       setTravelOpen(true); return
     }
 
+    // Sempre mostra o seletor de origem (Casa / Trabalho / Cidade)
+    // para o usuário escolher de onde vai partir
+    setTravelData({ tipo: 'origin_selector' })
+    setTravelOpen(true)
+  }
+
+  async function calcularComOrigem(origem) {
+    setTravelData(null)
+    setTravelOpen(false)
     setLoadingTravel(true)
+    // Destino é sempre o estádio (com cidade para geolocalização)
+    const destino = jogo.estadio && jogo.estadio !== 'A definir'
+      ? `${jogo.estadio}, ${jogo.cidade}`
+      : jogo.cidade
     try {
       const params = new URLSearchParams({
-        origem:  cidadeOrigem,
-        destino: jogo.cidade,
+        origem,
+        destino,
         ...(jogo.dt_obj ? { data_jogo: jogo.dt_obj } : {}),
       })
-      const { data } = await api.get(`/api/travel/opcoes?${params}`)
-      setTravelData(data)
+      const { data: tData } = await api.get(`/api/travel/opcoes?${params}`)
+      // Sobrescreve o destino na resposta para exibir o nome do estádio
+      tData.destino = jogo.estadio && jogo.estadio !== 'A definir' ? jogo.estadio : jogo.cidade
+      setTravelData(tData)
       setTravelOpen(true)
-    } catch (e) {
+    } catch {
       setTravelData({ erro: 'Não foi possível calcular as opções de viagem.' })
       setTravelOpen(true)
     } finally {
@@ -59,10 +81,15 @@ export default function MatchCard({ jogo, modoViagem = false, cidadeOrigem = '',
     : jogo.placar
 
   return (
-    <div className={`match-card ${saved ? 'is-saved' : modoViagem ? 'is-future' : ''} animate-slide-up`}>
-      <div className={`match-card-header ${saved ? 'saved' : modoViagem ? 'future' : ''}`}>
-        <span>{saved ? '✓ Memória salva' : `${jogo.data_fmt} · ${jogo.torneio}`}</span>
-        {saved && <span>{jogo.data_fmt}</span>}
+    <div className={`match-card ${saved ? 'is-saved' : modoViagem ? 'is-future' : ''} glass-panel`}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.05em', color: saved ? 'var(--gold)' : modoViagem ? 'var(--blue-bright)' : 'var(--text-muted)' }}>
+          <Calendar size={14} />
+          {jogo.data_fmt.toUpperCase()}
+        </div>
+        <div style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.05)' }}>
+          {jogo.torneio}
+        </div>
       </div>
 
       <div className="match-teams">
@@ -77,50 +104,61 @@ export default function MatchCard({ jogo, modoViagem = false, cidadeOrigem = '',
         </div>
       </div>
 
-      <div className="match-footer">
-        <span className="match-venue">🏟 {jogo.estadio} · {jogo.cidade}</span>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {modoViagem && (
-            <button onClick={handleViagemClick} disabled={loadingTravel} className="btn btn-ghost"
-              style={{ padding: '5px 12px', fontSize: '0.78rem',
-                borderColor: travelOpen ? 'var(--green)' : undefined,
-                color:       travelOpen ? 'var(--green)' : undefined }}>
-              {loadingTravel
-                ? <span className="spinner" style={{ width: 12, height: 12 }} />
-                : travelOpen ? '✈ Fechar' : '✈ Viagem'}
+      <div className="match-footer" style={{ borderTopColor: 'rgba(255,255,255,0.08)' }}>
+        <span className="match-venue">
+          <MapPin size={14} style={{ color: 'var(--text-muted)' }} />
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <strong style={{ color: 'var(--text-secondary)' }}>{jogo.estadio}</strong> · {jogo.cidade}
+          </span>
+        </span>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          {saved && (
+            <button onClick={() => setFinanceOpen(!financeOpen)} className="btn btn-ghost"
+              style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: 'var(--radius-pill)',
+                borderColor: financeOpen ? 'var(--gold)' : 'var(--border)',
+                background: financeOpen ? 'var(--gold-soft)' : 'transparent',
+                color: financeOpen ? 'var(--gold)' : 'var(--text-primary)' }}>
+              Planejar Finanças
             </button>
           )}
-          <button onClick={toggleDiary} className={`btn ${saved ? 'btn-danger' : 'btn-primary'}`}
-            style={{ padding: '5px 12px', fontSize: '0.78rem' }}>
-            {saved ? '× Remover' : '+ Eu Fui!'}
+          {modoViagem && (
+            <button onClick={handleViagemClick} disabled={loadingTravel} className="btn btn-ghost"
+              style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: 'var(--radius-pill)',
+                borderColor: travelOpen ? 'var(--green)' : 'var(--border)',
+                background: travelOpen ? 'var(--green-soft)' : 'transparent',
+                color: travelOpen ? 'var(--green)' : 'var(--text-primary)' }}>
+              {loadingTravel
+                ? <Loader2 size={16} className="spinner" />
+                : travelOpen ? <><X size={16} /> Fechar</> : <><Plane size={16} fill={travelOpen ? "currentColor" : "none"} /> Viagem</>}
+            </button>
+          )}
+          <button onClick={toggleDiary} className={`btn ${saved ? 'btn-ghost' : 'btn-primary'}`}
+            style={{ padding: '6px 14px', fontSize: '0.8rem', borderRadius: 'var(--radius-pill)', color: saved ? '#EF4444' : 'inherit', borderColor: saved ? 'rgba(239, 68, 68, 0.3)' : 'transparent' }}>
+            {saved ? <><X size={16} /> Remover</> : <><Plus size={16} /> {modoViagem ? 'Salvar p/ Viagem' : 'Eu Fui!'}</>}
           </button>
         </div>
       </div>
 
+      {/* ── Painel de Finanças ────────────────────────────────────────────── */}
+      {financeOpen && saved && (
+        <FinancePanel jogo={jogo} modo={modoViagem ? 'viagem' : 'historico'} />
+      )}
+
       {/* ── Painel de Viagem ──────────────────────────────────────────────── */}
       {travelOpen && travelData && (
-        travelData.tipo === 'sem_cidade'
-          ? <CidadeForm
-              jogoCidade={jogo.cidade}
-              onConfirm={async (cidade) => {
-                // Informa o pai para persistir no auth
-                await onCidadeAtualizada?.(cidade)
-                // Calcula imediatamente com a cidade inserida
-                setTravelData(null)
-                setTravelOpen(false)
-                setLoadingTravel(true)
-                try {
-                  const params = new URLSearchParams({ origem: cidade, destino: jogo.cidade,
-                    ...(jogo.dt_obj ? { data_jogo: jogo.dt_obj } : {}) })
-                  const { data } = await api.get(`/api/travel/opcoes?${params}`)
-                  setTravelData(data)
-                  setTravelOpen(true)
-                } catch {
-                  setTravelData({ erro: 'Não foi possível calcular as opções.' })
-                  setTravelOpen(true)
-                } finally { setLoadingTravel(false) }
-              }} />
-          : <TravelPanel data={travelData} />
+        <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid rgba(255,255,255,0.08)', animation: 'slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1) both' }}>
+          {travelData.tipo === 'sem_cidade'
+            ? <CidadeForm
+                jogoCidade={jogo.estadio || jogo.cidade}
+                onConfirm={async (cidade) => {
+                  await onCidadeAtualizada?.(cidade)
+                  calcularComOrigem(cidade)
+                }} />
+            : travelData.tipo === 'origin_selector' || travelData.tipo === 'local_transit'
+              ? <OriginSelector user={user} jogo={jogo} onConfirm={calcularComOrigem} />
+              : <TravelPanel data={travelData} />
+          }
+        </div>
       )}
     </div>
   )
@@ -141,43 +179,145 @@ function CidadeForm({ jogoCidade, onConfirm }) {
   }
 
   return (
-    <div className="animate-slide-up" style={{
-      marginTop: 10, padding: '14px 16px',
-      background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-      borderRadius: 'var(--radius-md)',
+    <div className="glass-panel" style={{
+      padding: '20px', background: 'rgba(59, 130, 246, 0.05)', 
+      border: '1px solid var(--border-blue)', borderRadius: 'var(--radius-lg)'
     }}>
-      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: 6 }}>
-        📍 De onde você vai viajar para {jogoCidade}?
-      </div>
-      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: 10 }}>
-        Informe sua cidade e calcularemos as melhores rotas.
-      </div>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 8 }}>
-        <input
-          value={cidade}
-          onChange={e => setCidade(e.target.value)}
-          placeholder="Ex: São Paulo, Campinas, Curitiba..."
-          autoFocus
-          style={{
-            flex: 1, background: 'var(--bg-card)', border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-md)', padding: '7px 12px',
-            color: 'var(--text-primary)', fontSize: '0.85rem',
-            outline: 'none', transition: 'border-color 0.2s',
-          }}
-          onFocus={e  => e.target.style.borderColor = 'var(--green)'}
-          onBlur={e   => e.target.style.borderColor = 'var(--border)'}
-        />
-        <button type="submit" disabled={loading || !cidade.trim()} className="btn btn-primary"
-          style={{ padding: '7px 16px', fontSize: '0.82rem', flexShrink: 0 }}>
-          {loading ? <span className="spinner" style={{ width: 12, height: 12 }} /> : 'Calcular ✈'}
-        </button>
-      </form>
-      <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)', marginTop: 6 }}>
-        Sua cidade será salva no perfil para os próximos acessos.
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+        <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--blue-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Compass size={18} className="text-blue" />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: '0.95rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 4 }}>
+            De onde você vai viajar para {jogoCidade}?
+          </div>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 16 }}>
+            Informe sua cidade atual para calcularmos as rotas (Salvaremos no seu perfil).
+          </div>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 10 }}>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <MapPin size={16} className="text-muted" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+              <input
+                value={cidade}
+                onChange={e => setCidade(e.target.value)}
+                placeholder="Sua cidade... (Ex: São Paulo)"
+                autoFocus
+                style={{ paddingLeft: '36px', height: '44px', background: 'rgba(0,0,0,0.4)', borderColor: 'rgba(255,255,255,0.1)' }}
+              />
+            </div>
+            <button type="submit" disabled={loading || !cidade.trim()} className="btn btn-primary"
+              style={{ height: '44px', padding: '0 20px', borderRadius: 'var(--radius-md)' }}>
+              {loading ? <Loader2 size={18} className="spinner" /> : <><Navigation size={16} /> Rota</>}
+            </button>
+          </form>
+        </div>
       </div>
     </div>
   )
 }
+
+// ─── Seletor de Origem Premium (Apple-style) ─────────────────────────────────
+
+function OriginSelector({ user, jogo, onConfirm }) {
+  const [loading, setLoading] = useState(null) // key do botão em loading
+
+  const estadio = jogo.estadio && jogo.estadio !== 'A definir' ? jogo.estadio : jogo.cidade
+
+  async function handleSelect(key, origem) {
+    setLoading(key)
+    try { await onConfirm(origem) }
+    finally { setLoading(null) }
+  }
+
+  const opcoes = [
+    { key: 'casa',      label: 'De Casa',      emoji: '🏠', valor: user?.endereco_casa,      show: !!user?.endereco_casa },
+    { key: 'trabalho',  label: 'Do Trabalho',  emoji: '🏢', valor: user?.endereco_trabalho,  show: !!user?.endereco_trabalho },
+    { key: 'cidade',    label: `Centro de ${user?.cidade_origem || 'sua cidade'}`, emoji: '📍', valor: user?.cidade_origem, show: true },
+  ].filter(o => o.show)
+
+  return (
+    <div style={{
+      background: 'linear-gradient(145deg, rgba(10,10,15,0.95), rgba(20,20,30,0.8))',
+      backdropFilter: 'blur(24px)',
+      border: '1px solid rgba(255,255,255,0.07)',
+      borderRadius: 'var(--radius-lg)',
+      overflow: 'hidden',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)',
+      animation: 'slideUp 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.1) both'
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '14px 18px', borderBottom: '1px solid rgba(255,255,255,0.06)',
+        background: 'rgba(255,255,255,0.02)'
+      }}>
+        <div style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 4 }}>
+          Destino
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: '1rem' }}>🏟️</span>
+          <span style={{ fontWeight: 800, color: '#fff', fontSize: '0.95rem' }}>{estadio}</span>
+          {jogo.cidade && jogo.estadio !== jogo.cidade && (
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>· {jogo.cidade}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Pergunta */}
+      <div style={{ padding: '12px 18px 4px' }}>
+        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          De onde você vai sair?
+        </div>
+      </div>
+
+      {/* Opções */}
+      <div style={{ padding: '8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {opcoes.map(op => (
+          <button key={op.key} onClick={() => handleSelect(op.key, op.valor)}
+            disabled={!!loading}
+            style={{
+              width: '100%', display: 'flex', alignItems: 'center', gap: 14,
+              padding: '12px 14px', borderRadius: 'var(--radius-md)',
+              background: 'transparent', border: '1px solid transparent',
+              cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s',
+              fontFamily: 'var(--font-body)',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = 'transparent'
+              e.currentTarget.style.borderColor = 'transparent'
+            }}
+          >
+            <div style={{
+              width: 38, height: 38, borderRadius: '50%', flexShrink: 0,
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem'
+            }}>
+              {loading === op.key ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite', color: 'var(--gold)' }} /> : op.emoji}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#fff', marginBottom: 2 }}>{op.label}</div>
+              {op.valor && (
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 220 }}>
+                  {op.valor}
+                </div>
+              )}
+            </div>
+            <ChevronRight size={16} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Função legada mantida para compatibilidade
+function LocalTransitForm({ user, jogo, onOptionResolved }) {
+  return <OriginSelector user={user} jogo={jogo} onConfirm={onOptionResolved} />
+}
+
 
 // ─── Painel comparativo de viagem ────────────────────────────────────────────
 
@@ -187,116 +327,165 @@ function TravelPanel({ data }) {
   if (data.erro) {
     return (
       <div style={{
-        margin: '10px 0 0', padding: '10px 14px',
-        background: 'rgba(248,113,113,0.07)', border: '1px solid rgba(248,113,113,0.2)',
-        borderRadius: 'var(--radius-md)', fontSize: '0.8rem', color: 'var(--text-muted)',
+        padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '12px',
+        background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)',
+        borderRadius: 'var(--radius-lg)', color: '#FCA5A5', fontWeight: 600, fontSize: '0.9rem'
       }}>
-        ⚠️ {data.erro}
+        <X size={20} /> {data.erro}
       </div>
     )
   }
 
+  // Define array of modals matching the order we want to display
+  const modals = ['aviao', 'onibus', 'carro']
+
   return (
-    <div className="animate-slide-up" style={{
-      marginTop: 10, background: 'var(--bg-elevated)',
-      border: '1px solid var(--border)', borderRadius: 'var(--radius-md)', overflow: 'hidden',
+    <div style={{
+      background: 'rgba(0, 0, 0, 0.4)', border: '1px solid rgba(255, 255, 255, 0.1)', 
+      borderRadius: 'var(--radius-md)', overflow: 'hidden', boxShadow: 'inset 0 4px 20px rgba(0,0,0,0.5)'
     }}>
-      {/* Cabeçalho */}
+      {/* Cabeçalho do Painel */}
       <div style={{
-        padding: '9px 14px', borderBottom: '1px solid var(--border)',
+        padding: '12px 16px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        background: 'linear-gradient(90deg, rgba(255,255,255,0.03) 0%, transparent 100%)'
       }}>
-        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
-          📍 {data.origem} → {data.destino}
-        </span>
-        <span style={{
-          fontSize: '0.7rem', color: 'var(--text-muted)',
-          background: 'var(--bg-card)', borderRadius: 999, padding: '1px 8px',
-          border: '1px solid var(--border)',
-        }}>
-          ~{data.distancia_km} km
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 8px var(--green)' }} />
+          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+            {data.origem} <ChevronRight size={14} style={{ display: 'inline', verticalAlign: 'middle', color: 'var(--text-muted)' }} /> {data.destino}
+          </span>
+          {/* Badges IATA — exibidos quando os aeroportos forem detectados */}
+          {data.iata_origem && data.iata_destino && (
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              fontSize: '0.72rem', fontWeight: 800, letterSpacing: '0.05em',
+              padding: '3px 10px', borderRadius: '100px',
+              background: 'rgba(167, 139, 250, 0.1)',
+              border: '1px solid rgba(167, 139, 250, 0.25)',
+              color: '#A78BFA',
+            }}>
+              <Plane size={10} />
+              {data.iata_origem} → {data.iata_destino}
+            </span>
+          )}
+        </div>
+        <span className="badge badge-muted" style={{ padding: '4px 10px', background: 'rgba(0,0,0,0.5)' }}>
+          {data.distancia_km} km
         </span>
       </div>
 
-      {/* Aviso de estimativa */}
       <div style={{
-        padding: '4px 14px', fontSize: '0.63rem', fontStyle: 'italic',
-        color: 'var(--text-muted)', borderBottom: '1px solid var(--border)',
-        background: 'rgba(255,255,255,0.015)',
+        padding: '6px 16px', fontSize: '0.7rem', color: 'var(--text-muted)', 
+        borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', alignItems: 'center', gap: '6px',
+        fontWeight: 600
       }}>
-        ℹ️ Valores estimados. Consute as plataformas para preços exatos.
+         Estimativas de mercado sujeitas a alterações.
       </div>
 
-      {/* Linhas de cada modal */}
-      {data.opcoes?.map(op => (
-        <ModalRow key={op.modal} op={op}
-          aberto={modalAberto === op.modal}
-          onToggle={() => setModalAberto(v => v === op.modal ? null : op.modal)} />
-      ))}
+      {/* Accordion das opções */}
+      <div>
+        {data.opcoes?.map(op => (
+          <ModalRow key={op.modal} op={op}
+            aberto={modalAberto === op.modal}
+            onToggle={() => setModalAberto(v => v === op.modal ? null : op.modal)} />
+        ))}
+      </div>
     </div>
   )
 }
 
 // ─── Linha de modal ──────────────────────────────────────────────────────────
 
-const MODAL_COLOR = { carro: '#60A5FA', onibus: '#34D399', aviao: '#A78BFA' }
+const MODAL_CONFIG = { 
+  transporte_local: { color: 'var(--gold)', icon: Navigation },
+  carro:  { color: 'var(--blue-bright)', icon: Car },
+  onibus: { color: 'var(--gold-dim)', icon: Bus },
+  aviao:  { color: '#A78BFA', icon: Plane }
+}
 
 function ModalRow({ op, aberto, onToggle }) {
-  const cor = MODAL_COLOR[op.modal] || 'var(--text-muted)'
+  const config = MODAL_CONFIG[op.modal] || { color: 'var(--text-muted)', icon: Navigation }
+  const Icon = config.icon
+
   return (
     <div style={{
-      borderBottom: '1px solid var(--border)',
-      background: op.recomendado ? 'rgba(0,199,133,0.04)' : 'transparent',
+      borderBottom: '1px solid rgba(255,255,255,0.05)',
+      background: op.recomendado ? `linear-gradient(90deg, ${config.color}15 0%, transparent 100%)` : 'transparent',
+      transition: 'background 0.3s'
     }}>
       <button onClick={onToggle}
         style={{
-          width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-          padding: '9px 14px', background: 'none', border: 'none',
-          cursor: 'pointer', textAlign: 'left', transition: 'background 0.15s',
+          width: '100%', display: 'flex', alignItems: 'center', gap: 14,
+          padding: '14px 16px', background: 'none', border: 'none',
+          cursor: 'pointer', textAlign: 'left', transition: 'background 0.2s',
         }}
-        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+        onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.04)'}
         onMouseLeave={e => e.currentTarget.style.background = 'none'}
       >
-        <span style={{ fontSize: '1rem', width: 22, flexShrink: 0 }}>{op.emoji}</span>
-        <span style={{ fontWeight: 700, fontSize: '0.82rem', color: cor, minWidth: 55 }}>{op.label}</span>
-        {op.recomendado && (
-          <span style={{
-            fontSize: '0.6rem', fontWeight: 700, flexShrink: 0,
-            background: 'rgba(0,199,133,0.12)', color: 'var(--green)',
-            border: '1px solid rgba(0,199,133,0.3)', borderRadius: 999, padding: '1px 7px',
-          }}>★ Melhor custo</span>
-        )}
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 10, alignItems: 'center' }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-            ⏱ {formatarDuracao(op.duracao_h)}
+        <div style={{ width: 36, height: 36, borderRadius: '50%', background: `rgba(0,0,0,0.3)`, border: `1px solid ${config.color}40`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <Icon size={18} style={{ color: config.color }} />
+        </div>
+        
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{op.label}</span>
+            {op.recomendado && (
+              <span style={{
+                fontSize: '0.65rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
+                background: 'var(--green-soft)', color: 'var(--green)',
+                border: '1px solid var(--border-green)', borderRadius: '4px', padding: '2px 6px',
+              }}>Recomendado</span>
+            )}
+          </div>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+             Tempo aprox. {formatarDuracao(op.duracao_h)}
           </span>
-          <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
-            R${op.custo.min}–{op.custo.max}
+        </div>
+
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 16, alignItems: 'center' }}>
+          <span style={{ fontSize: '1.05rem', fontWeight: 800, color: config.color, whiteSpace: 'nowrap', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600 }}>{op.custo.min === op.custo.max ? '' : 'Entre '}</span>
+            R${op.custo.min}{op.custo.min !== op.custo.max && ` – ${op.custo.max}`}
           </span>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem',
-            transform: aberto ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }}>›</span>
+          <ChevronDown size={18} style={{ color: 'var(--text-muted)', transform: aberto ? 'rotate(180deg)' : 'none', transition: 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)' }} />
         </div>
       </button>
 
       {aberto && (
-        <div className="animate-slide-up" style={{
-          padding: '6px 14px 10px 46px', display: 'flex', flexWrap: 'wrap', gap: 8,
+        <div className="animate-fade-in" style={{
+          padding: '0 16px 16px 66px', display: 'flex', flexWrap: 'wrap', gap: 10,
         }}>
-          {Object.entries(op.links || {}).map(([nome, url]) => (
-            <a key={nome} href={url} target="_blank" rel="noreferrer"
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 4,
-                padding: '5px 11px', borderRadius: 'var(--radius-md)',
-                background: 'var(--bg-card)', border: '1px solid var(--border)',
-                color: cor, fontSize: '0.74rem', fontWeight: 600, textDecoration: 'none',
-                transition: 'all 0.15s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = cor; e.currentTarget.style.background = `${cor}18` }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'var(--bg-card)' }}
-            >
-              {LINK_LABELS[nome] ?? nome} ↗
-            </a>
-          ))}
+          {Object.entries(op.links || {}).map(([nome, url]) => {
+            const label = LINK_LABELS[nome] || nome
+            const hl = LINK_HIGHLIGHTS[nome]
+            return (
+              <a key={nome} href={url} target="_blank" rel="noreferrer"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: hl ? '8px 16px' : '6px 14px',
+                  borderRadius: 'var(--radius-pill)',
+                  color: hl ? hl.color : 'var(--text-primary)',
+                  fontSize: hl ? '0.8rem' : '0.75rem',
+                  fontWeight: hl ? 700 : 500,
+                  border: `1px solid ${hl ? hl.border : 'rgba(255,255,255,0.1)'}`,
+                  background: hl ? hl.bg : 'rgba(0,0,0,0.3)',
+                  textDecoration: 'none',
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={e => {
+                  if (hl) { e.currentTarget.style.background = hl.hoverBg; e.currentTarget.style.transform = 'translateY(-1px)' }
+                  else { e.currentTarget.style.borderColor = config.color; e.currentTarget.style.color = config.color }
+                }}
+                onMouseLeave={e => {
+                  if (hl) { e.currentTarget.style.background = hl.bg; e.currentTarget.style.transform = 'none' }
+                  else { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = 'var(--text-primary)' }
+                }}
+              >
+                {label}
+              </a>
+            )
+          })}
         </div>
       )}
     </div>
@@ -304,16 +493,23 @@ function ModalRow({ op, aberto, onToggle }) {
 }
 
 const LINK_LABELS = {
-  google_maps:    '🗺 Google Maps',
-  waze:           '🧭 Waze',
-  buser:          '🚌 Buser',
-  clickbus:       '🎟 ClickBus',
-  google_flights: '✈ Google Flights',
-  skyscanner:     '🛫 Skyscanner',
+  google_maps:    <><MapPin size={12} /> Google Maps</>,
+  waze:           <><Navigation size={12} /> Waze</>,
+  uber:           <><Car size={12} /> Uber</>,
+  buser:          <><Bus size={12} /> Buser</>,
+  clickbus:       <><Bus size={12} /> ClickBus</>,
+  google_flights: <><Plane size={13} /> Google Flights</>,
+  skyscanner:     <><Plane size={12} /> Skyscanner</>,
+}
+
+// Links que merecem destaque especial (cores únicas)
+const LINK_HIGHLIGHTS = {
+  google_flights: { bg: 'rgba(66, 133, 244, 0.12)', border: 'rgba(66, 133, 244, 0.35)', color: '#60A5FA', hoverBg: 'rgba(66, 133, 244, 0.22)' },
+  skyscanner:     { bg: 'rgba(0, 225, 180, 0.08)',  border: 'rgba(0, 225, 180, 0.25)',  color: '#2dd4bf', hoverBg: 'rgba(0, 225, 180, 0.18)' },
 }
 
 function formatarDuracao(h) {
   const hh = Math.floor(h)
   const mm = Math.round((h - hh) * 60)
-  return mm === 0 ? `${hh}h` : `${hh}h${String(mm).padStart(2, '0')}min`
+  return mm === 0 ? `${hh}h` : `${hh}h${String(mm).padStart(2, '0')}m`
 }
