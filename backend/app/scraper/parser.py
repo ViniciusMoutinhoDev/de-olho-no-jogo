@@ -144,14 +144,25 @@ def buscar_detalhes_jogo(event_id: int) -> list[dict] | None:
 
 
 def buscar_jogos_por_ano(time_id: int, ano: int) -> list:
-    from datetime import datetime, timezone
-    
-    agora = datetime.now().timestamp()
-    ano_atual = datetime.now().year
-    raw_events = []
-    ids_vistos = set()
+    """
+    Busca todos os jogos de um time em um determinado ano.
 
-    # --- Jogos PASSADOS (last/) ---
+    A API SofaScore retorna jogos 'last' em ordem DECRESCENTE (mais novo → mais antigo).
+    Paginamos enquanto o jogo mais antigo da página ainda for >= ano_inicio.
+    Quando a página já contém eventos anteriores ao ano buscado, paramos de paginar
+    mas ainda coletamos todos os eventos válidos dessa página.
+
+    Para o ano atual também varremos 'next' inteiro (jogos agendados que podem já
+    ter placar, pois alguns ficam em 'next' mesmo após encerrados).
+    """
+    ano_atual  = datetime.now().year
+    ano_inicio = datetime(ano, 1, 1).timestamp()
+    ano_fim    = datetime(ano, 12, 31, 23, 59, 59).timestamp()
+    agora      = datetime.now().timestamp()
+
+    raw_events: dict[int, dict] = {}   # deduplica por id do evento
+
+    # ── 1. Busca em 'last' (jogos já encerrados / passados) ─────────────────
     pagina = 0
     while True:
         data = get(f"/team/{time_id}/events/last/{pagina}")
@@ -161,78 +172,65 @@ def buscar_jogos_por_ano(time_id: int, ano: int) -> list:
         if not events:
             break
 
-        achou_ano = False
-        passou_do_ano = False
+        tem_evento_no_ano = False
+        passou_do_ano     = False
 
         for e in events:
-            ts = e.get("startTimestamp")
-            if not ts:
-                continue
-            ano_jogo = datetime.fromtimestamp(ts).year
-            if ano_jogo == ano:
-                achou_ano = True
-                if e["id"] not in ids_vistos:
-                    raw_events.append(e)
-                    ids_vistos.add(e["id"])
-            elif ano_jogo < ano:
-                # SofaScore pagina do mais recente para o mais antigo.
-                # Se já passamos do ano buscado, não há mais o que encontrar.
+            ts     = e.get("startTimestamp", 0)
+            status = e.get("status", {}).get("type", "")
+            if ano_inicio <= ts <= ano_fim and status == "finished":
+                raw_events[e["id"]] = e
+            elif ts < ano_inicio:
+                # Chegamos em eventos anteriores ao ano buscado → podemos parar
                 passou_do_ano = True
 
+        # Para de paginar se já passamos do ano buscado
         if passou_do_ano:
-            break  # Early exit: não precisa varrer páginas mais antigas
-
+            break
         if not data.get("hasNextPage", False):
             break
         pagina += 1
         time.sleep(0.2)
 
-    # --- Jogos FUTUROS / recém-terminados que o SofaScore ainda não moveu (next/) ---
-    # Só busca se for o ano atual ou futuro
-    if ano >= ano_atual:
-        pagina = 0
-        while True:
-            data = get(f"/team/{time_id}/events/next/{pagina}")
-            if not data:
-                break
-            events = data.get("events", [])
-            if not events:
-                break
-            for e in events:
-                ts = e.get("startTimestamp")
-                if not ts:
-                    continue
-                if datetime.fromtimestamp(ts).year == ano and e["id"] not in ids_vistos:
-                    raw_events.append(e)
-                    ids_vistos.add(e["id"])
-            if not data.get("hasNextPage", False):
-                break
-            pagina += 1
-            time.sleep(0.2)
+    # ── 2. Busca em 'next' ───────────────────────────────────────────────────
+    # Alguns jogos ficam na fila 'next' mesmo após encerrados (adiamentos,
+    # recuperação de dados). Varremos para garantir completude, mas só
+    # incluímos jogos com status "finished".
+    pagina = 0
+    while True:
+        data = get(f"/team/{time_id}/events/next/{pagina}")
+        if not data:
+            break
+        events = data.get("events", [])
+        if not events:
+            break
+
+        passou_do_ano = False
+        for e in events:
+            ts     = e.get("startTimestamp", 0)
+            status = e.get("status", {}).get("type", "")
+            if ano_inicio <= ts <= ano_fim and status == "finished":
+                raw_events[e["id"]] = e
+            elif ts > ano_fim:
+                # Eventos futuros além do ano buscado → podemos parar
+                passou_do_ano = True
+
+        if passou_do_ano:
+            break
+        if not data.get("hasNextPage", False):
+            break
+        pagina += 1
+        time.sleep(0.2)
+
 
     if not raw_events:
         return []
 
-    # Filtra: já aconteceu (timestamp no passado) OU status finished
-    # Para anos passados: só finished. Para ano atual: aceita qualquer um que já passou.
-    def jogo_valido(e):
-        ts = e.get("startTimestamp", 0)
-        status = e.get("status", {}).get("type", "")
-        if status == "finished":
-            return True
-        # Aceita jogos que claramente já ocorreram (passado há mais de 2h)
-        if ts and ts < (agora - 7200):
-            return True
-        return False
+    events_list = list(raw_events.values())
+    venue_map   = _resolver_venues(events_list)
 
-    eventos_filtrados = [e for e in raw_events if jogo_valido(e)]
-
-    if not eventos_filtrados:
-        return []
-
-    venue_map = _resolver_venues(eventos_filtrados)
     jogos = []
-    for e in eventos_filtrados:
+    for e in events_list:
         venue = e.get("venue") or {}
         if venue.get("name") and venue.get("city"):
             estadio, cidade = venue["name"], venue["city"].get("name", "A definir")
@@ -240,5 +238,7 @@ def buscar_jogos_por_ano(time_id: int, ano: int) -> list:
             estadio, cidade = venue_map.get(e["id"], _extrair_venue(e))
         jogos.append(_montar_jogo(e, time_id, estadio, cidade))
 
-    jogos.sort(key=lambda x: x["timestamp"], reverse=True)
+    # Ordena da mais recente para a mais antiga (padrão do histórico)
+    jogos.sort(key=lambda x: x["timestamp"] or 0, reverse=True)
     return jogos
+

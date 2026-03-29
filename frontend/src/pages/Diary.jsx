@@ -32,6 +32,7 @@ export default function Diary() {
             </div>
           ))}
         </div>
+        
       )}
 
       {loading && (

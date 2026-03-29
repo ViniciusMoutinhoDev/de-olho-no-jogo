@@ -1,45 +1,201 @@
+import logging
 from app.scraper.client import get, team_image_url
-from curl_cffi import requests
 
+logger = logging.getLogger(__name__)
 
+# Lista de países exibidos na UI
 PAISES = [
     {"id": "brasil",    "nome": "Brasil",     "bandeira": "🇧🇷"},
     {"id": "england",   "nome": "Inglaterra", "bandeira": "🏴󠁧󠁢󠁥󠁮󠁧󠁿"},
     {"id": "spain",     "nome": "Espanha",    "bandeira": "🇪🇸"},
     {"id": "france",    "nome": "França",     "bandeira": "🇫🇷"},
     {"id": "argentina", "nome": "Argentina",  "bandeira": "🇦🇷"},
+    {"id": "germany",   "nome": "Alemanha",   "bandeira": "🇩🇪"},
+    {"id": "italy",     "nome": "Itália",     "bandeira": "🇮🇹"},
+    {"id": "portugal",  "nome": "Portugal",   "bandeira": "🇵🇹"},
+    {"id": "usa",       "nome": "EUA",        "bandeira": "🇺🇸"},
+    {"id": "mexico",    "nome": "México",     "bandeira": "🇲🇽"},
 ]
 
-LIGAS_POR_PAIS = {
-    "brasil": [
-        {"id": 325,  "nome": "Brasileirão Série A",  "tipo": "liga"},
-        {"id": 390,  "nome": "Copa do Brasil",        "tipo": "copa"},
-        {"id": 62,  "nome": "Campeonato Paulista",   "tipo": "liga"},
-        {"id": 244,  "nome": "Campeonato Carioca",    "tipo": "liga"},
-        {"id": 77,   "nome": "Brasileirão Série B",   "tipo": "liga"},
-    ],
-    "england": [
-        {"id": 17,   "nome": "Premier League",        "tipo": "liga"},
-        {"id": 24,   "nome": "Championship",          "tipo": "liga"},
-        {"id": 19,   "nome": "FA Cup",                "tipo": "copa"},
-        {"id": 21,   "nome": "EFL Cup",               "tipo": "copa"},
-    ],
-    "spain": [
-        {"id": 8,    "nome": "La Liga",               "tipo": "liga"},
-        {"id": 11,   "nome": "La Liga 2",             "tipo": "liga"},
-        {"id": 329,  "nome": "Copa del Rey",          "tipo": "copa"},
-    ],
-    "france": [
-        {"id": 34,   "nome": "Ligue 1",               "tipo": "liga"},
-        {"id": 182,  "nome": "Ligue 2",               "tipo": "liga"},
-        {"id": 192,  "nome": "Coupe de France",       "tipo": "copa"},
-    ],
-    "argentina": [
-        {"id": 155,  "nome": "Liga Profesional",      "tipo": "liga"},
-        {"id": 703,  "nome": "Primera Nacional",      "tipo": "liga"},
-        {"id": 475,  "nome": "Copa de la Liga",       "tipo": "copa"},
-    ],
+# Torneios âncora: IDs que sabemos com certeza serem corretos
+# Usados para descobrir o category_id real do país no SofaScore
+_ANCHOR_TOURNAMENTS = {
+    "brasil":    325,   # Brasileirão Série A
+    "england":   17,    # Premier League
+    "spain":     8,     # La Liga
+    "france":    34,    # Ligue 1
+    "argentina": 155,   # Liga Profesional Argentina
+    "germany":   35,    # Bundesliga
+    "italy":     23,    # Serie A (Itália)
+    "portugal":  238,   # Primeira Liga
+    "usa":       242,   # MLS
+    "mexico":    52,    # Liga MX
 }
+
+# Cache: pais_id → category_id (descoberto via API)
+_cache_category: dict[str, int] = {}
+
+# Cache: category_id → lista de ligas
+_cache_ligas: dict[int, list] = {}
+
+
+def _descobrir_category_id(pais_id: str) -> int | None:
+    """
+    Descobre o category_id real do SofaScore usando um torneio âncora conhecido.
+    Ex: buscando '/unique-tournament/325' retorna o category.id do Brasil.
+    """
+    if pais_id in _cache_category:
+        return _cache_category[pais_id]
+
+    anchor_id = _ANCHOR_TOURNAMENTS.get(pais_id)
+    if not anchor_id:
+        return None
+
+    data = get(f"/unique-tournament/{anchor_id}")
+    if not data:
+        return None
+
+    cat_id = (
+        data.get("uniqueTournament", {})
+            .get("category", {})
+            .get("id")
+    )
+    if cat_id:
+        _cache_category[pais_id] = cat_id
+        logger.info(f"Descoberto category_id para '{pais_id}': {cat_id}")
+    return cat_id
+
+
+
+def _parse_torneios(raw_tournaments: list[dict], principal: bool) -> list[dict]:
+    """Converte lista bruta de torneios no formato padronizado."""
+    ligas: list[dict] = []
+    vistos: set[int] = set()
+    for t in raw_tournaments:
+        tid = t.get("id")
+        if not tid or tid in vistos:
+            continue
+        vistos.add(tid)
+        nome = t.get("name", "") or t.get("translationKey", "") or ""
+        if not nome:
+            continue
+        nome_lower = nome.lower()
+        tipo = "copa" if any(w in nome_lower for w in [
+            "cup", "copa", "coupe", "pokal", "coppa", "taça",
+            "supercup", "supercoppa", "shield", "trophy", "trofeo",
+        ]) else "liga"
+        ligas.append({
+            "id":        tid,
+            "nome":      nome,
+            "tipo":      tipo,
+            "slug":      t.get("slug", ""),
+            "principal": principal,
+        })
+    return ligas
+
+
+def buscar_ligas_por_categoria(pais_id: str) -> dict:
+    """
+    Retorna as ligas de um país divididas em:
+      - principais: grupo "Popular" do SofaScore (as mais importantes)
+      - todas:      todas as ligas disponíveis (incluindo divisões inferiores)
+    """
+    category_id = _descobrir_category_id(pais_id)
+    if not category_id:
+        logger.warning(f"Não foi possível descobrir category_id para '{pais_id}'")
+        return {"principais": [], "todas": []}
+
+    cache_key = f"{category_id}"
+    if cache_key in _cache_ligas:
+        return _cache_ligas[cache_key]
+
+    data = get(f"/category/{category_id}/unique-tournaments")
+    if not data:
+        return {"principais": [], "todas": []}
+
+    principais: list[dict] = []
+    todas:      list[dict] = []
+
+    try:
+        grupos = data.get("groups", [])
+        if grupos:
+            for i, grupo in enumerate(grupos):
+                nome_grupo = (grupo.get("name") or "").lower()
+                # O primeiro grupo OU grupos com "popular" no nome = principais
+                is_principal = (i == 0) or ("popular" in nome_grupo)
+                torneios = _parse_torneios(
+                    grupo.get("uniqueTournaments", []),
+                    principal=is_principal
+                )
+                if is_principal:
+                    principais.extend(torneios)
+                todas.extend(torneios)
+        else:
+            # Estrutura plana sem groups
+            flat = _parse_torneios(data.get("uniqueTournaments", []), principal=True)
+            principais = flat
+            todas      = flat
+
+    except Exception as e:
+        logger.error(f"Erro ao parsear ligas da categoria {category_id}: {e}")
+
+    # Ordena: ligas antes de copas, depois alfabético
+    _sort = lambda lst: sorted(lst, key=lambda x: (x["tipo"] == "copa", x["nome"].lower()))
+    resultado = {
+        "principais": _sort(principais),
+        "todas":      _sort(todas),
+    }
+
+    if resultado["principais"] or resultado["todas"]:
+        _cache_ligas[cache_key] = resultado
+    return resultado
+
+
+
+
+def buscar_ligas_por_nome(query: str) -> list[dict]:
+    """
+    Busca ligas/torneios por nome usando o endpoint de search do SofaScore.
+    Retorna lista de {id, nome, tipo, pais} com dados reais.
+    """
+    if not query or len(query.strip()) < 2:
+        return []
+
+    data = get(f"/search/{query.strip()}")
+    if not data:
+        return []
+
+    ligas = []
+    vistos = set()
+
+    for item in data.get("results", []):
+        entity = item.get("entity", {})
+        # Filtra apenas entidades do tipo "UniqueOfficialTournament" ou "UniqueTournament"
+        entity_type = item.get("type", "")
+        if "tournament" not in entity_type.lower() and "Tournament" not in entity_type:
+            continue
+
+        tid = entity.get("id")
+        if not tid or tid in vistos:
+            continue
+        vistos.add(tid)
+
+        nome = entity.get("name", "")
+        pais = entity.get("category", {}).get("name", "") if entity.get("category") else ""
+        nome_lower = nome.lower()
+        tipo = "liga"
+        if any(w in nome_lower for w in ["cup", "copa", "coupe", "pokal", "coppa", "taça", "supercup"]):
+            tipo = "copa"
+
+        ligas.append({
+            "id":   tid,
+            "nome": nome,
+            "tipo": tipo,
+            "pais": pais,
+        })
+
+    return ligas[:10]  # Limita a 10 resultados
+
 
 # Mapeamento pelo texto exato do SofaScore (promotion.text)
 # Chave em lowercase para comparação case-insensitive

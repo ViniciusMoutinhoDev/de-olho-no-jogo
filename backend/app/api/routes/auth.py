@@ -3,7 +3,8 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from app.db.models import UsuarioCreate, UsuarioLogin, TokenResponse, ClubeCoracaoPayload
 from app.db.repositories.user_repo import (
     criar_usuario, buscar_usuario_por_email,
-    buscar_usuario_por_id, salvar_clube_coracao, remover_clube_coracao
+    buscar_usuario_por_id, salvar_clube_coracao, remover_clube_coracao,
+    atualizar_cidade_origem,
 )
 from app.core.security import hash_senha, verificar_senha, criar_token, get_current_user_id
 
@@ -56,3 +57,15 @@ def set_clube_coracao(payload: ClubeCoracaoPayload, user_id: int = Depends(get_c
 def del_clube_coracao(user_id: int = Depends(get_current_user_id)):
     remover_clube_coracao(user_id)
     return {"message": "Clube do coração removido"}
+
+
+@router.put("/cidade")
+def atualizar_cidade(payload: dict, user_id: int = Depends(get_current_user_id)):
+    """Atualiza a cidade de origem do usuário."""
+    cidade = (payload.get("cidade") or "").strip()
+    if not cidade:
+        raise HTTPException(status_code=400, detail="Cidade inválida")
+    ok = atualizar_cidade_origem(user_id, cidade)
+    if not ok:
+        raise HTTPException(status_code=500, detail="Erro ao atualizar cidade")
+    return {"cidade_origem": cidade}

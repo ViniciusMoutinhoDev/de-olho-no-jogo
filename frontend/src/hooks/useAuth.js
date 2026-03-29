@@ -44,10 +44,18 @@ export function useAuth() {
     setUser(updated)
   }
 
+  async function atualizarCidade(cidade) {
+    const { data } = await api.put('/api/auth/cidade', { cidade })
+    const updated = { ...user, cidade_origem: data.cidade_origem }
+    localStorage.setItem('user', JSON.stringify(updated))
+    setUser(updated)
+    return data.cidade_origem
+  }
+
   function logout() {
     localStorage.clear()
     setUser(null)
   }
 
-  return { user, setUser, login, register, logout, salvarClubeCoracao, removerClubeCoracao }
+  return { user, setUser, login, register, logout, salvarClubeCoracao, removerClubeCoracao, atualizarCidade }
 }

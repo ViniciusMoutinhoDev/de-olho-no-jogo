@@ -54,6 +54,16 @@ def inicializar_banco() -> None:
             )
         """)
 
+        # Cache persistente de geocodificação (evita chamadas repetidas ao Nominatim)
+        c.execute("""
+            CREATE TABLE IF NOT EXISTS geo_cache (
+                cidade      TEXT PRIMARY KEY,
+                lat         REAL NOT NULL,
+                lon         REAL NOT NULL,
+                criado_em   TEXT DEFAULT (datetime('now'))
+            )
+        """)
+
         migrations = [
             ("diario",    "user_id",              "INTEGER"),
             ("diario",    "home_logo",             "TEXT"),
@@ -61,6 +71,7 @@ def inicializar_banco() -> None:
             ("usuarios",  "clube_coracao_id",      "INTEGER"),
             ("usuarios",  "clube_coracao_nome",    "TEXT"),
             ("usuarios",  "clube_coracao_logo",    "TEXT"),
+            ("usuarios",  "cidade_origem",        "TEXT DEFAULT 'São Paulo'"),
         ]
         for table, col, tipo in migrations:
             try:

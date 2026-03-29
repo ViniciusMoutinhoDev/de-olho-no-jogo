@@ -1,9 +1,13 @@
 from fastapi import APIRouter, HTTPException, Query
 from app.scraper.leagues import (
-    PAISES, LIGAS_POR_PAIS, buscar_tabela_liga, buscar_jogos_liga
+    PAISES,
+    buscar_ligas_por_categoria,
+    buscar_ligas_por_nome,
+    buscar_tabela_liga,
+    buscar_jogos_liga,
+    buscar_info_liga,
 )
 
-from app.scraper.leagues import buscar_info_liga
 router = APIRouter()
 
 
@@ -12,12 +16,23 @@ def listar_paises():
     return PAISES
 
 
+@router.get("/search")
+def search_ligas(q: str = Query(..., min_length=2)):
+    """Busca ligas/torneios por nome no SofaScore."""
+    return buscar_ligas_por_nome(q)
+
+
 @router.get("/{pais_id}/ligas")
 def listar_ligas(pais_id: str):
-    ligas = LIGAS_POR_PAIS.get(pais_id)
-    if ligas is None:
-        raise HTTPException(status_code=404, detail="País não encontrado")
-    return ligas
+    """
+    Retorna as ligas de um país divididas em:
+    - principais: ligas do grupo Popular (exibição padrão)
+    - todas: todas as ligas incluindo divisões inferiores (para busca)
+    """
+    resultado = buscar_ligas_por_categoria(pais_id)
+    if not resultado["principais"] and not resultado["todas"]:
+        raise HTTPException(status_code=404, detail="País não encontrado ou sem ligas")
+    return resultado
 
 
 @router.get("/{tournament_id}/tabela")
@@ -43,8 +58,6 @@ def jogos_liga(
 @router.get("/{tournament_id}/info")
 def info_liga(tournament_id: int):
     result = buscar_info_liga(tournament_id)
-    
     if "error" in result:
         raise HTTPException(status_code=404, detail=result["error"])
-    
-    return result
+    return result

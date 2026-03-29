@@ -6,7 +6,7 @@ import LeagueSelector from '../components/LeagueSelector'
 import HistoricoJogos from '../components/HistoricoJogos'
 
 export default function Home({ auth }) {
-  const { user, salvarClubeCoracao } = auth
+  const { user, salvarClubeCoracao, atualizarCidade } = auth
   const { matches, loading, fetchMatches } = useMatches()
 
   const [search, setSearch] = useState('')
@@ -131,7 +131,8 @@ export default function Home({ auth }) {
         )}
         {matches.map((jogo, i) => (
           <div key={jogo.id} style={{ animationDelay: `${i * 0.04}s` }}>
-            <MatchCard jogo={jogo} modoViagem cidadeOrigem={user.cidade_origem} />
+          <MatchCard jogo={jogo} modoViagem cidadeOrigem={user.cidade_origem}
+              onCidadeAtualizada={atualizarCidade} />
           </div>
         ))}
       </div>

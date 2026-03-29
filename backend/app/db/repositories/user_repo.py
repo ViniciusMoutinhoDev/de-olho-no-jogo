@@ -69,3 +69,16 @@ def remover_clube_coracao(user_id: int) -> bool:
         return True
     finally:
         conn.close()
+
+
+def atualizar_cidade_origem(user_id: int, cidade: str) -> bool:
+    conn = conectar()
+    try:
+        c = conn.cursor()
+        c.execute("UPDATE usuarios SET cidade_origem = ? WHERE id = ?", (cidade, user_id))
+        conn.commit()
+        return c.rowcount > 0
+    except Exception:
+        return False
+    finally:
+        conn.close()
