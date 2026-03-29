@@ -23,6 +23,8 @@ class TokenResponse(BaseModel):
     clube_coracao_id:   Optional[int]  = None
     clube_coracao_nome: Optional[str]  = None
     clube_coracao_logo: Optional[str]  = None
+    endereco_casa:      Optional[str]  = None
+    endereco_trabalho:  Optional[str]  = None
 
 
 class ClubeCoracaoPayload(BaseModel):
@@ -42,6 +44,10 @@ class JogoPayload(BaseModel):
     torneio: Optional[str] = "Amistoso"
     home_logo: Optional[str] = ""
     away_logo: Optional[str] = ""
+    status: Optional[str] = "fui"
+    gastos_ingresso: Optional[float] = 0.0
+    gastos_transporte: Optional[float] = 0.0
+    gastos_alimentacao: Optional[float] = 0.0
 
 
 class DiarioEntry(BaseModel):
@@ -56,3 +62,7 @@ class DiarioEntry(BaseModel):
     torneio: Optional[str]
     home_logo: Optional[str]
     away_logo: Optional[str]
+    status: str
+    gastos_ingresso: float
+    gastos_transporte: float
+    gastos_alimentacao: float

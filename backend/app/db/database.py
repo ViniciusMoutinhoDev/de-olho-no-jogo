@@ -68,10 +68,19 @@ def inicializar_banco() -> None:
             ("diario",    "user_id",              "INTEGER"),
             ("diario",    "home_logo",             "TEXT"),
             ("diario",    "away_logo",             "TEXT"),
+            ("diario",    "status",                "TEXT DEFAULT 'fui'"),
+            ("diario",    "gastos_ingresso",       "REAL DEFAULT 0"),
+            ("diario",    "gastos_transporte",     "REAL DEFAULT 0"),
+            ("diario",    "gastos_alimentacao",    "REAL DEFAULT 0"),
+            ("diario",    "gastos_real_ingresso",   "REAL"),
+            ("diario",    "gastos_real_transporte",  "REAL"),
+            ("diario",    "gastos_real_alimentacao", "REAL"),
             ("usuarios",  "clube_coracao_id",      "INTEGER"),
             ("usuarios",  "clube_coracao_nome",    "TEXT"),
             ("usuarios",  "clube_coracao_logo",    "TEXT"),
             ("usuarios",  "cidade_origem",        "TEXT DEFAULT 'São Paulo'"),
+            ("usuarios",  "endereco_casa",         "TEXT"),
+            ("usuarios",  "endereco_trabalho",     "TEXT"),
         ]
         for table, col, tipo in migrations:
             try:

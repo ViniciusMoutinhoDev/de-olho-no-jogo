@@ -35,6 +35,8 @@ def login(payload: UsuarioLogin):
         clube_coracao_id=user.get("clube_coracao_id"),
         clube_coracao_nome=user.get("clube_coracao_nome"),
         clube_coracao_logo=user.get("clube_coracao_logo"),
+        endereco_casa=user.get("endereco_casa"),
+        endereco_trabalho=user.get("endereco_trabalho"),
     )
 
 
@@ -45,6 +47,23 @@ def me(user_id: int = Depends(get_current_user_id)):
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     user.pop("senha_hash", None)
     return user
+
+
+@router.put("/enderecos")
+def atualizar_enderecos_route(payload: dict, user_id: int = Depends(get_current_user_id)):
+    """Atualiza o endereço de casa ou do trabalho do usuário."""
+    from app.db.repositories.user_repo import atualizar_enderecos
+    
+    tipo = payload.get("tipo")
+    endereco = (payload.get("endereco") or "").strip()
+    
+    if tipo not in ["casa", "trabalho"]:
+        raise HTTPException(status_code=400, detail="Tipo inválido. Use 'casa' ou 'trabalho'.")
+        
+    ok = atualizar_enderecos(user_id, tipo, endereco)
+    if not ok:
+        raise HTTPException(status_code=500, detail="Erro ao atualizar endereço")
+    return {"tipo": tipo, "endereco": endereco}
 
 
 @router.post("/clube-coracao")

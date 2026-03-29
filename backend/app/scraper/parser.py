@@ -9,23 +9,47 @@ from app.db.repositories.club_repo import consultar_estadio_por_id, consultar_es
 logger = logging.getLogger(__name__)
 
 
+def _obter_pais(e: dict) -> str:
+    # Tenta extrair o país do time mandante ou do torneio
+    try:
+        if "country" in e["homeTeam"]:
+            return e["homeTeam"]["country"].get("name", "")
+        if "category" in e.get("tournament", {}):
+            return e["tournament"]["category"].get("name", "")
+    except Exception:
+        pass
+    return ""
+
 def _extrair_venue(e: dict) -> tuple[str, str]:
+    pais = _obter_pais(e)
     venue = e.get("venue") or {}
     if venue.get("name") and venue.get("city"):
-        return venue["name"], venue["city"].get("name", "A definir")
+        cidade = venue["city"].get("name", "A definir")
+        if pais and cidade != "A definir":
+            cidade = f"{cidade}, {pais}"
+        return venue["name"], cidade
+        
     home_id = e["homeTeam"]["id"]
     dados = consultar_estadio_por_id(home_id) or consultar_estadio_do_clube(e["homeTeam"]["name"])
     if dados:
-        return dados["estadio"], dados["cidade"]
+        cidade = dados["cidade"]
+        if pais and cidade != "A definir":
+            cidade = f"{cidade}, {pais}"
+        return dados["estadio"], cidade
     return "A definir", "A definir"
 
 
 def _buscar_venue_individual(event_id: int) -> tuple[str, str]:
     data = get(f"/event/{event_id}")
     if data:
-        venue = data.get("event", {}).get("venue") or {}
+        e = data.get("event", {})
+        venue = e.get("venue") or {}
         if venue.get("name") and venue.get("city"):
-            return venue["name"], venue["city"].get("name", "A definir")
+            cidade = venue["city"].get("name", "A definir")
+            pais = _obter_pais(e)
+            if pais and cidade != "A definir":
+                cidade = f"{cidade}, {pais}"
+            return venue["name"], cidade
     return "A definir", "A definir"
 
 

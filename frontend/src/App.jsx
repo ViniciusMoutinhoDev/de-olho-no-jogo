@@ -4,6 +4,8 @@ import Login from './pages/Login'
 import Register from './pages/Register'
 import Home from './pages/Home'
 import Diary from './pages/Diary'
+import Trips from './pages/Trips'
+import Settings from './pages/Settings'
 import LeagueView from './pages/LeagueView'
 import Navbar from './components/Navbar'
 
@@ -26,6 +28,12 @@ export default function App() {
         } />
         <Route path="/diary" element={
           <PrivateRoute><Diary /></PrivateRoute>
+        } />
+        <Route path="/trips" element={
+          <PrivateRoute><Trips auth={auth} /></PrivateRoute>
+        } />
+        <Route path="/settings" element={
+          <PrivateRoute><Settings auth={auth} /></PrivateRoute>
         } />
         <Route path="/league/:tournamentId" element={
           <PrivateRoute><LeagueView /></PrivateRoute>

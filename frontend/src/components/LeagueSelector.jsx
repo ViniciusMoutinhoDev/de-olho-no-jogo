@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import api from '../api/client'
+import { Search, Globe, ChevronRight, X, Trophy, XCircle, ChevronDown, Activity } from 'lucide-react'
 
 const LOGO_LIGA = (id) => `https://api.sofascore.app/api/v1/unique-tournament/${id}/image`
 
@@ -18,20 +19,16 @@ export default function LeagueSelector() {
   const navigate   = useNavigate()
   const timeoutRef = useRef(null)
 
-  // ── Estado de países ───────────────────────────────────────────────────────
   const [paises, setPaises]     = useState([])
   const [paisSel, setPaisSel]   = useState(null)
 
-  // ── Estado de ligas (retorno do backend: {principais, todas}) ──────────────
   const [todasLigas, setTodasLigas]   = useState([])
   const [principaisLigas, setPrincipaisLigas] = useState([])
   const [loadingLigas, setLoadingLigas] = useState(false)
 
-  // ── Filtro local dentro da grid ────────────────────────────────────────────
   const [filtro, setFiltro]       = useState('')
   const [verTodas, setVerTodas]   = useState(false)
 
-  // ── Busca global (clube ou liga por nome) ──────────────────────────────────
   const [query, setQuery]               = useState('')
   const [searching, setSearching]       = useState(false)
   const [searchResults, setSearchResults] = useState(null)
@@ -40,7 +37,6 @@ export default function LeagueSelector() {
     api.get('/api/leagues/paises').then(r => setPaises(r.data)).catch(() => {})
   }, [])
 
-  // Debounce de busca global
   useEffect(() => {
     clearTimeout(timeoutRef.current)
     if (!query.trim()) { setSearchResults(null); return }
@@ -76,7 +72,6 @@ export default function LeagueSelector() {
     setLoadingLigas(true)
     try {
       const { data } = await api.get(`/api/leagues/${paisId}/ligas`)
-      // Backend retorna { principais: [...], todas: [...] }
       setPrincipaisLigas(data.principais || [])
       setTodasLigas(data.todas || [])
     } catch {
@@ -95,7 +90,6 @@ export default function LeagueSelector() {
     navigate(`/?clube=${clube.id}&nome=${encodeURIComponent(clube.nome)}&logo=${encodeURIComponent(clube.logo)}`)
   }
 
-  // Ligas exibidas: filtradas pelo campo de texto e pelo toggle Ver todas
   const listaBase  = verTodas ? todasLigas : principaisLigas
   const ligasFiltradas = filtro.trim()
     ? listaBase.filter(l => l.nome.toLowerCase().includes(filtro.toLowerCase()))
@@ -106,78 +100,76 @@ export default function LeagueSelector() {
 
   return (
     <div>
-
       {/* ── BARRA DE BUSCA GLOBAL ── */}
-      <div style={{ position: 'relative', marginBottom: '1.75rem' }}>
+      <div style={{ position: 'relative', marginBottom: '2rem' }}>
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          background: 'var(--bg-card)', border: '1px solid var(--border)',
-          borderRadius: 'var(--radius-lg)', padding: '10px 16px',
-          transition: 'border-color 0.2s, box-shadow 0.2s',
+          display: 'flex', alignItems: 'center', gap: 12,
+          background: 'var(--bg-card)', border: '1px solid var(--border-strong)',
+          borderRadius: 'var(--radius-pill)', padding: '12px 20px',
+          boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.4)',
+          transition: 'all 0.3s ease',
         }}>
-          <span style={{ fontSize: '1rem', flexShrink: 0, color: 'var(--text-muted)' }}>
-            {searching ? <span className="spinner" style={{ width: 16, height: 16 }} /> : '🔍'}
-          </span>
+          {searching ? <span className="spinner" style={{ width: 20, height: 20, color: 'var(--text-muted)' }} /> : <Search size={22} className="text-muted" />}
+          
           <input
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Buscar liga ou clube... ex: Premier League, Flamengo"
+            placeholder="Encontre qualquer liga ou time..."
             style={{
               background: 'transparent', border: 'none', outline: 'none',
-              fontSize: '0.92rem', color: 'var(--text-primary)',
-              width: '100%', padding: 0,
+              fontSize: '1rem', color: 'var(--text-primary)',
+              width: '100%', padding: 0, boxShadow: 'none'
             }}
             onFocus={e => {
               e.currentTarget.parentElement.style.borderColor = 'var(--green)'
-              e.currentTarget.parentElement.style.boxShadow = '0 0 0 3px var(--green-glow)'
+              e.currentTarget.parentElement.style.boxShadow = '0 0 0 4px var(--green-glow-lg)'
             }}
             onBlur={e => {
-              e.currentTarget.parentElement.style.borderColor = 'var(--border)'
-              e.currentTarget.parentElement.style.boxShadow = 'none'
+              e.currentTarget.parentElement.style.borderColor = 'var(--border-strong)'
+              e.currentTarget.parentElement.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.4)'
             }}
           />
           {query && (
             <button onClick={() => { setQuery(''); setSearchResults(null) }}
               style={{ background: 'none', border: 'none', color: 'var(--text-muted)',
-                cursor: 'pointer', fontSize: '1.1rem', padding: 0, flexShrink: 0 }}>
-              ✕
+                cursor: 'pointer', padding: 0, flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+              <XCircle size={20} />
             </button>
           )}
         </div>
 
         {/* Dropdown de busca global */}
         {searchResults && (temResultados || query) && (
-          <div className="animate-slide-up" style={{
-            position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0,
-            background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-lg)', overflow: 'hidden',
-            zIndex: 50, boxShadow: '0 16px 48px rgba(0,0,0,0.55)',
+          <div className="animate-slide-up glass-panel" style={{
+            position: 'absolute', top: 'calc(100% + 12px)', left: 0, right: 0,
+            borderRadius: 'var(--radius-xl)', overflow: 'hidden', padding: '0.5rem 0',
+            zIndex: 50, boxShadow: '0 24px 64px rgba(0,0,0,0.6)', border: '1px solid rgba(255,255,255,0.1)'
           }}>
             {!searchResults.clube && !searchResults.ligas?.length && (
-              <div style={{ padding: '1rem 1.25rem', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
-                Nenhum resultado para "{query}"
+              <div style={{ padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.95rem', textAlign: 'center' }}>
+                Nenhum resultado de busca para "{query}"
               </div>
             )}
             {searchResults.clube && (
               <>
-                <SectionLabel>Clube</SectionLabel>
+                <SectionLabel icon={<Shield size={14} />}>Clube</SectionLabel>
                 <ResultItem
                   logo={searchResults.clube.logo} nome={searchResults.clube.nome}
-                  sub={`Clube · ${searchResults.clube.pais || ''}`}
-                  tag="Ver jogos →" tagColor="var(--green)"
+                  sub={`Time Oficial · ${searchResults.clube.pais || ''}`}
+                  tag="Perfil do Clube" tagColor="var(--green)"
                   onClick={() => irParaClube(searchResults.clube)}
                 />
               </>
             )}
             {searchResults.ligas?.length > 0 && (
               <>
-                <SectionLabel hasBorder={!!searchResults.clube}>Ligas</SectionLabel>
+                <SectionLabel hasBorder={!!searchResults.clube} icon={<Trophy size={14} />}>Ligas & Copas</SectionLabel>
                 {searchResults.ligas.map(liga => (
                   <ResultItem key={liga.id}
                     logo={LOGO_LIGA(liga.id)} logoSize={30}
                     nome={liga.nome}
-                    sub={`${liga.tipo === 'copa' ? '🏆 Copa' : '📊 Liga'}${liga.pais ? ` · ${liga.pais}` : ''}`}
-                    tag="Ver tabela →" tagColor="var(--blue)"
+                    sub={`${liga.tipo === 'copa' ? 'Competição' : 'Campeonato'}${liga.pais ? ` · ${liga.pais}` : ''}`}
+                    tag="Acessar" tagColor="var(--blue)"
                     onClick={() => irParaLiga(liga)}
                   />
                 ))}
@@ -187,53 +179,51 @@ export default function LeagueSelector() {
         )}
       </div>
 
-      {/* ── GRID DE PAÍSES ── */}
+      {/* ── GRID DE PAÍSES (Pílulas Glassmorfismo) ── */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
-        gap: 10, marginBottom: '1.5rem',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))',
+        gap: 12, marginBottom: '2.5rem',
       }}>
         {paises.map(p => {
           const ativo   = paisSel?.id === p.id
           const flagUrl = FLAG_URL(p.id)
           return (
-            <button key={p.id} onClick={() => selecionarPais(p.id)} style={{
+            <button key={p.id} onClick={() => selecionarPais(p.id)} className="glass-panel" style={{
               display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center',
-              gap: 8, padding: '14px 8px',
-              background: ativo
-                ? 'linear-gradient(135deg, rgba(0,199,133,0.15), rgba(0,199,133,0.05))'
-                : 'var(--bg-card)',
-              border: `1px solid ${ativo ? 'var(--border-green)' : 'var(--border)'}`,
+              gap: 12, padding: '16px 10px',
+              background: ativo ? 'linear-gradient(145deg, rgba(0,232,150,0.15), rgba(0,232,150,0.05))' : 'rgba(15, 20, 30, 0.4)',
+              border: `1px solid ${ativo ? 'var(--border-green)' : 'rgba(255,255,255,0.05)'}`,
               borderRadius: 'var(--radius-lg)', cursor: 'pointer',
-              transition: 'all 0.22s cubic-bezier(0.4,0,0.2,1)',
-              boxShadow: ativo ? '0 0 20px rgba(0,199,133,0.18)' : 'none',
+              transition: 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)',
+              boxShadow: ativo ? '0 8px 24px rgba(0,232,150,0.2)' : '0 4px 12px rgba(0,0,0,0.2)',
             }}
             onMouseEnter={e => {
               if (ativo) return
-              e.currentTarget.style.transform = 'translateY(-3px)'
-              e.currentTarget.style.borderColor = 'var(--border-hover)'
-              e.currentTarget.style.boxShadow = '0 8px 28px rgba(0,0,0,0.4)'
-              e.currentTarget.style.background = 'var(--bg-elevated)'
+              e.currentTarget.style.transform = 'translateY(-4px)'
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'
+              e.currentTarget.style.boxShadow = '0 12px 32px rgba(0,0,0,0.4)'
+              e.currentTarget.style.background = 'rgba(25, 32, 45, 0.7)'
             }}
             onMouseLeave={e => {
               if (ativo) return
               e.currentTarget.style.transform = 'none'
-              e.currentTarget.style.borderColor = 'var(--border)'
-              e.currentTarget.style.boxShadow = 'none'
-              e.currentTarget.style.background = 'var(--bg-card)'
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)'
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)'
+              e.currentTarget.style.background = 'rgba(15, 20, 30, 0.4)'
             }}
             >
               {flagUrl
                 ? <img src={flagUrl} alt={p.nome} style={{
-                    width: 40, height: 27, objectFit: 'cover', borderRadius: 3,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+                    width: 44, height: 30, objectFit: 'cover', borderRadius: '4px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.5)', filter: ativo ? 'brightness(1.1)' : 'brightness(0.9)'
                   }} onError={e => { e.target.style.display = 'none' }} />
-                : <span style={{ fontSize: '1.6rem' }}>{p.bandeira}</span>
+                : <Globe size={28} className={ativo ? "text-green" : "text-muted"} />
               }
               <span style={{
-                fontFamily: 'var(--font-display)', fontWeight: 700,
-                fontSize: '0.75rem', textAlign: 'center', lineHeight: 1.3,
+                fontFamily: 'var(--font-display)', fontWeight: 800,
+                fontSize: '0.8rem', textAlign: 'center', lineHeight: 1.2,
                 color: ativo ? 'var(--green)' : 'var(--text-secondary)',
               }}>
                 {p.nome}
@@ -245,91 +235,101 @@ export default function LeagueSelector() {
 
       {/* ── SEÇÃO DE LIGAS DO PAÍS SELECIONADO ── */}
       {paisSel && (
-        <div className="animate-slide-up">
+        <div className="animate-slide-up glass-panel" style={{ padding: '1.5rem', borderRadius: 'var(--radius-xl)' }}>
 
           {/* Cabeçalho: título + campo de filtro + toggle */}
           <div style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            marginBottom: '0.85rem', flexWrap: 'wrap',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem'
           }}>
-            <span style={{
-              fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.07em',
-              textTransform: 'uppercase', color: 'var(--text-muted)',
-            }}>
-              Ligas · {paisSel.nome}
-            </span>
-            {loadingLigas && <span className="spinner" style={{ width: 12, height: 12 }} />}
-            {!loadingLigas && ligasFiltradas.length > 0 && (
-              <span style={{
-                background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-                borderRadius: 999, padding: '1px 8px',
-                fontSize: '0.65rem', color: 'var(--text-muted)',
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ 
+                width: 32, height: 32, borderRadius: '50%', background: 'var(--blue-soft)', 
+                display: 'flex', alignItems: 'center', justifyContent: 'center' 
               }}>
-                {ligasFiltradas.length}
+                <Activity size={16} className="text-blue" />
+              </div>
+              <span style={{
+                fontSize: '1rem', fontWeight: 800, fontFamily: 'var(--font-display)',
+                color: 'var(--text-primary)',
+              }}>
+                Torneios do(a) {paisSel.nome}
               </span>
-            )}
-
-            {/* Campo de filtro local */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 6,
-              background: 'var(--bg-elevated)', border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-md)', padding: '5px 10px',
-              marginLeft: 'auto', minWidth: 180,
-              transition: 'border-color 0.2s',
-            }}>
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>🔍</span>
-              <input
-                value={filtro}
-                onChange={e => setFiltro(e.target.value)}
-                placeholder={`Filtrar ${verTodas ? 'ligas' : 'principais'}...`}
-                style={{
-                  background: 'transparent', border: 'none', outline: 'none',
-                  fontSize: '0.82rem', color: 'var(--text-primary)',
-                  width: '100%', padding: 0,
-                }}
-                onFocus={e => e.currentTarget.parentElement.style.borderColor = 'var(--green)'}
-                onBlur={e => e.currentTarget.parentElement.style.borderColor = 'var(--border)'}
-              />
-              {filtro && (
-                <button onClick={() => setFiltro('')}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)',
-                    cursor: 'pointer', fontSize: '0.9rem', padding: 0, flexShrink: 0 }}>
-                  ✕
-                </button>
+              
+              {!loadingLigas && ligasFiltradas.length > 0 && (
+                <span className="badge badge-muted" style={{ marginLeft: '4px' }}>
+                  {ligasFiltradas.length} Competições
+                </span>
               )}
             </div>
 
-            {/* Toggle: Principais / Ver todas */}
-            {todasLigas.length > principaisLigas.length && (
-              <button
-                onClick={() => { setVerTodas(v => !v); setFiltro('') }}
-                style={{
-                  background: verTodas ? 'rgba(0,199,133,0.12)' : 'var(--bg-elevated)',
-                  border: `1px solid ${verTodas ? 'var(--border-green)' : 'var(--border)'}`,
-                  borderRadius: 'var(--radius-md)', padding: '5px 12px',
-                  color: verTodas ? 'var(--green)' : 'var(--text-muted)',
-                  fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer',
-                  transition: 'all 0.2s', whiteSpace: 'nowrap',
-                }}
-              >
-                {verTodas ? '✓ Todas' : `Ver todas (${todasLigas.length})`}
-              </button>
-            )}
+            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
+              {/* Campo de filtro local */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)',
+                borderRadius: 'var(--radius-pill)', padding: '6px 16px',
+                minWidth: 200, transition: 'all 0.3s',
+              }}>
+                <Search size={14} className="text-muted" />
+                <input
+                  value={filtro}
+                  onChange={e => setFiltro(e.target.value)}
+                  placeholder={`Filtrar ${verTodas ? 'todas' : 'principais'}...`}
+                  style={{
+                    background: 'transparent', border: 'none', outline: 'none',
+                    fontSize: '0.85rem', color: 'var(--text-primary)',
+                    width: '100%', padding: 0, boxShadow: 'none'
+                  }}
+                  onFocus={e => {
+                    e.currentTarget.parentElement.style.borderColor = 'var(--green)'
+                    e.currentTarget.parentElement.style.background = 'rgba(0,232,150,0.05)'
+                  }}
+                  onBlur={e => {
+                    e.currentTarget.parentElement.style.borderColor = 'rgba(255,255,255,0.1)'
+                    e.currentTarget.parentElement.style.background = 'rgba(0,0,0,0.3)'
+                  }}
+                />
+                {filtro && (
+                  <button onClick={() => setFiltro('')}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center' }}>
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              {/* Toggle: Principais / Ver todas */}
+              {todasLigas.length > principaisLigas.length && (
+                <button className="btn btn-ghost"
+                  onClick={() => { setVerTodas(v => !v); setFiltro('') }}
+                  style={{
+                    background: verTodas ? 'rgba(0,232,150,0.1)' : 'rgba(255,255,255,0.05)',
+                    borderColor: verTodas ? 'var(--green)' : 'rgba(255,255,255,0.1)',
+                    color: verTodas ? 'var(--green)' : 'var(--text-secondary)',
+                    borderRadius: 'var(--radius-pill)', padding: '6px 20px',
+                    fontSize: '0.8rem'
+                  }}
+                >
+                  {verTodas ? 'Ocultar Divisões Inferiores' : `Mostrar Todas (${todasLigas.length})`}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Mensagem de carregamento */}
           {loadingLigas && (
-            <div className="loading" style={{ padding: '2rem' }}>
-              <span className="spinner" /> Carregando ligas de {paisSel.nome}...
+            <div className="loading" style={{ padding: '3rem', flexDirection: 'column', gap: '1rem' }}>
+              <span className="spinner" style={{ width: 32, height: 32 }} /> 
+              <span style={{ fontWeight: 600 }}>Mapeando compenonatos do(a) {paisSel.nome}...</span>
             </div>
           )}
 
           {/* Sem resultados */}
           {!loadingLigas && ligasFiltradas.length === 0 && (
-            <div className="empty-state" style={{ padding: '2rem' }}>
+            <div className="empty-state" style={{ padding: '3rem' }}>
               {filtro
-                ? <p>Nenhuma liga encontrada para "{filtro}"</p>
-                : <p>Nenhuma liga encontrada para {paisSel.nome}</p>
+                ? <><XCircle size={48} className="empty-state-icon mx-auto" /><p>Nenhum campeonato atende ao filtro "{filtro}"</p></>
+                : <><Globe size={48} className="empty-state-icon mx-auto" /><p>Nenhum campeonato mapeado ativamente para {paisSel.nome}</p></>
               }
             </div>
           )}
@@ -338,8 +338,8 @@ export default function LeagueSelector() {
           {!loadingLigas && ligasFiltradas.length > 0 && (
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-              gap: 10,
+              gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
+              gap: 14,
             }}>
               {ligasFiltradas.map(liga => (
                 <LeagueCard key={liga.id} liga={liga} onClick={() => irParaLiga(liga)} />
@@ -354,6 +354,10 @@ export default function LeagueSelector() {
 
 // ── Componentes auxiliares ─────────────────────────────────────────────────────
 
+function Shield({size}) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+}
+
 function LeagueCard({ liga, onClick }) {
   const [hover, setHover] = useState(false)
   return (
@@ -364,83 +368,93 @@ function LeagueCard({ liga, onClick }) {
       style={{
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        gap: 10, padding: '20px 12px',
-        background: hover ? 'var(--bg-elevated)' : 'var(--bg-card)',
-        border: `1px solid ${hover ? 'rgba(255,255,255,0.18)' : 'var(--border)'}`,
+        gap: 14, padding: '24px 16px',
+        background: hover ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.3)',
+        border: `1px solid ${hover ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.05)'}`,
         borderRadius: 'var(--radius-lg)', cursor: 'pointer',
-        transition: 'all 0.22s cubic-bezier(0.4,0,0.2,1)',
-        transform: hover ? 'translateY(-4px) scale(1.02)' : 'none',
-        boxShadow: hover ? '0 14px 36px rgba(0,0,0,0.48)' : 'none',
+        transition: 'all 0.3s cubic-bezier(0.25,1,0.5,1)',
+        transform: hover ? 'translateY(-6px)' : 'none',
+        boxShadow: hover ? '0 16px 32px rgba(0,0,0,0.5)' : 'none',
         textAlign: 'center', position: 'relative', overflow: 'hidden',
       }}
     >
+      <div style={{ 
+        position: 'absolute', top: -20, right: -20, width: 80, height: 80, 
+        background: `radial-gradient(circle, ${hover ? 'rgba(0,232,150,0.1)' : 'transparent'} 0%, transparent 70%)` 
+      }}></div>
+      
       <img
         src={`https://api.sofascore.app/api/v1/unique-tournament/${liga.id}/image`}
         alt={liga.nome}
         style={{
-          width: 54, height: 54, objectFit: 'contain',
-          filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.4))',
-          transition: 'transform 0.2s',
-          transform: hover ? 'scale(1.08)' : 'scale(1)',
+          width: 64, height: 64, objectFit: 'contain',
+          filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.6))',
+          transition: 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+          transform: hover ? 'scale(1.15) rotate(5deg)' : 'scale(1)',
         }}
-        onError={e => { e.target.style.opacity = '0.15' }}
+        onError={e => { e.target.style.opacity = '0.1' }}
       />
       <div>
         <div style={{
-          fontFamily: 'var(--font-display)', fontWeight: 700,
-          fontSize: '0.78rem', color: 'var(--text-primary)', lineHeight: 1.3,
+          fontFamily: 'var(--font-display)', fontWeight: 800,
+          fontSize: '0.85rem', color: 'var(--text-primary)', lineHeight: 1.2,
+          textShadow: '0 2px 4px rgba(0,0,0,0.5)'
         }}>
           {liga.nome}
         </div>
         <div style={{
-          fontSize: '0.63rem', color: 'var(--text-muted)', marginTop: 4,
-          textTransform: 'uppercase', letterSpacing: '0.07em', fontWeight: 600,
+          fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: 6,
+          textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700,
         }}>
-          {liga.tipo === 'copa' ? '🏆 Copa' : '📊 Liga'}
+          {liga.tipo === 'copa' ? 'Competição' : 'Campeonato'}
         </div>
       </div>
     </button>
   )
 }
 
-function SectionLabel({ children, hasBorder }) {
+function SectionLabel({ children, hasBorder, icon }) {
   return (
     <div style={{
-      padding: '6px 16px 4px',
-      fontSize: '0.67rem', fontWeight: 700, letterSpacing: '0.07em',
-      textTransform: 'uppercase', color: 'var(--text-muted)',
-      borderBottom: '1px solid var(--border)',
-      borderTop: hasBorder ? '1px solid var(--border)' : 'none',
+      display: 'flex', alignItems: 'center', gap: '8px',
+      padding: '12px 24px 6px',
+      fontSize: '0.7rem', fontWeight: 800, letterSpacing: '0.08em',
+      textTransform: 'uppercase', color: 'var(--text-secondary)',
+      borderTop: hasBorder ? '1px solid rgba(255,255,255,0.08)' : 'none',
       marginTop: hasBorder ? 4 : 0,
     }}>
-      {children}
+      {icon} {children}
     </div>
   )
 }
 
-function ResultItem({ logo, logoSize = 36, nome, sub, tag, tagColor, onClick }) {
+function ResultItem({ logo, logoSize = 40, nome, sub, tag, tagColor, onClick }) {
   const [hover, setHover] = useState(false)
   return (
     <button onClick={onClick}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       style={{
-        width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-        padding: '10px 16px', background: hover ? 'rgba(255,255,255,0.04)' : 'none',
+        width: '100%', display: 'flex', alignItems: 'center', gap: 14,
+        padding: '12px 24px', background: hover ? 'rgba(255,255,255,0.06)' : 'transparent',
         border: 'none', cursor: 'pointer', color: 'var(--text-primary)',
-        transition: 'background 0.15s', textAlign: 'left',
+        transition: 'background 0.2s', textAlign: 'left',
       }}
     >
-      <img src={logo} alt=""
-        style={{ width: logoSize, height: logoSize, objectFit: 'contain', flexShrink: 0 }}
-        onError={e => { e.target.style.opacity = '0.2' }} />
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontWeight: 600, fontSize: '0.9rem', overflow: 'hidden',
-          textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nome}</div>
-        <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 1 }}>{sub}</div>
+      <div style={{ width: logoSize, height: logoSize, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.2)', borderRadius: '10px', flexShrink: 0 }}>
+        <img src={logo} alt=""
+          style={{ width: logoSize - 8, height: logoSize - 8, objectFit: 'contain' }}
+          onError={e => { e.target.style.opacity = '0.2' }} />
       </div>
-      {tag && <span style={{ marginLeft: 'auto', fontSize: '0.73rem',
-        color: tagColor, fontWeight: 700, flexShrink: 0 }}>{tag}</span>}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 700, fontSize: '0.95rem', overflow: 'hidden',
+          textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nome}</div>
+        <div style={{ fontSize: '0.75rem', color: hover ? 'var(--text-secondary)' : 'var(--text-muted)', marginTop: 2, transition: 'var(--transition)' }}>{sub}</div>
+      </div>
+      {tag && <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem',
+        color: hover ? tagColor : 'var(--text-muted)', fontWeight: 700, flexShrink: 0, transition: 'color 0.2s' }}>
+          {tag} <ChevronRight size={14} />
+      </span>}
     </button>
   )
 }

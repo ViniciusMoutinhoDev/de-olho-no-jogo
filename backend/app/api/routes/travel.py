@@ -5,6 +5,7 @@ from app.core.logistics import (
     gerar_links_viagem,
     calcular_custos_carro,
     calcular_todas_opcoes,
+    _cidade_para_iata,
 )
 
 router = APIRouter()
@@ -22,8 +23,13 @@ def opcoes_viagem(
     - duração estimada em horas
     - links para plataformas de compra/planejamento
     - recomendação automática por melhor custo-benefício
+    - códigos IATA dos aeroportos (quando detectados)
     """
-    return calcular_todas_opcoes(origem, destino, data_jogo)
+    result = calcular_todas_opcoes(origem, destino, data_jogo)
+    # Adiciona IATA para o frontend exibir "GRU → POA"
+    result["iata_origem"]  = _cidade_para_iata(origem)
+    result["iata_destino"] = _cidade_para_iata(destino)
+    return result
 
 
 # ─── Endpoints legados (mantidos para compatibilidade) ────────────────────────
